@@ -7,9 +7,7 @@
 <style>
   :root{
     --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#cbd5e1;
-    --brand:#f4c49b; /* bege do logo */
-    --brand-dark:#e7b88f;
-    --accent:#0d4442; /* verde petróleo do logo */
+    --brand:#f4c49b; --brand-dark:#e7b88f; --accent:#0d4442;
     --chip:#1f2937; --border:#374151; --danger:#ef4444; --warning:#f59e0b;
   }
   *{box-sizing:border-box}
@@ -207,42 +205,162 @@
 <footer class="footer">LGPD: mantenha backups seguros. Os dados ficam apenas neste navegador, a menos que você exporte/importe.</footer>
 
 <script>
-  const $ = (s,r=document)=>r.querySelector(s);
-  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+(function(){
+  var $ = function(s,r){return (r||document).querySelector(s)};
+  var $$ = function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
 
-  const STORAGE_KEYS = {
-    PAC:'personart.pacientes.v7',
-    CONV:'personart.convenios.v7',
-    PROS:'personart.profissionais.v7',
-    ESP:'personart.especialidades.v7',
-    ORIG:'personart.origens.v7'
+  var STORAGE_KEYS = {
+    PAC:'personart.pacientes.v71',
+    CONV:'personart.convenios.v71',
+    PROS:'personart.profissionais.v71',
+    ESP:'personart.especialidades.v71',
+    ORIG:'personart.origens.v71'
   };
 
-  const DEFAULT_CONV = ['Funserv','Danamed','Gama Saúde','Fusex','BlueSaúde','Unimed Campinas','Ossel','Ofebas'];
-  const DEFAULT_PROS = ['Bruno Alexandre','Janaina Davi','Stephanie Magon','Soraia Souza','Simone Agrela','Maria Pedroso'];
-  const DEFAULT_ESP = ['Psicologia','Fonoaudiologia','Terapia Ocupacional','Nutrição'];
-  const DEFAULT_ORIG = ['Indicação','Google','Instagram','Site','Google Maps','Outro'];
+  var DEFAULT_CONV = ['Funserv','Danamed','Gama Saúde','Fusex','BlueSaúde','Unimed Campinas','Ossel','Ofebas'];
+  var DEFAULT_PROS = ['Bruno Alexandre','Janaina Davi','Stephanie Magon','Soraia Souza','Simone Agrela','Maria Pedroso'];
+  var DEFAULT_ESP = ['Psicologia','Fonoaudiologia','Terapia Ocupacional','Nutrição'];
+  var DEFAULT_ORIG = ['Indicação','Google','Instagram','Site','Google Maps','Outro'];
 
-  const loadJSON = (k,f)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? f }catch{return f} };
-  const saveJSON = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
-  const uid = ()=> Math.random().toString(36).slice(2) + Date.now().toString(36);
+  function loadJSON(k,f){ try{ var t=localStorage.getItem(k); return t?JSON.parse(t):f; }catch(e){ return f; } }
+  function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
 
-  const formatDateBR = (iso)=>{
-    if(!iso) return '';
-    const d = new Date(iso+'T00:00:00'); // evita fuso
-    if(Number.isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-  };
+  function parseISO(iso){
+    if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+    var a = iso.split('-'); return new Date(+a[0], +a[1]-1, +a[2]);
+  }
+  function formatDateBR(iso){
+    var d=parseISO(iso); if(!d) return '';
+    try{ return d.toLocaleDateString('pt-BR', { timeZone:'America/Sao_Paulo' }); }
+    catch(e){ var dd=('0'+d.getDate()).slice(2); var mm=('0'+(d.getMonth()+1)).slice(2); var yy=d.getFullYear(); return dd+'/'+mm+'/'+yy; }
+  }
 
-  let pacientes = loadJSON(STORAGE_KEYS.PAC, []);
-  let convenios = loadJSON(STORAGE_KEYS.CONV, DEFAULT_CONV);
-  let profissionais = loadJSON(STORAGE_KEYS.PROS, DEFAULT_PROS);
-  let especialidades = loadJSON(STORAGE_KEYS.ESP, DEFAULT_ESP);
-  let origens = loadJSON(STORAGE_KEYS.ORIG, DEFAULT_ORIG);
+  var pacientes = loadJSON(STORAGE_KEYS.PAC, []);
+  var convenios = loadJSON(STORAGE_KEYS.CONV, DEFAULT_CONV);
+  var profissionais = loadJSON(STORAGE_KEYS.PROS, DEFAULT_PROS);
+  var especialidades = loadJSON(STORAGE_KEYS.ESP, DEFAULT_ESP);
+  var origens = loadJSON(STORAGE_KEYS.ORIG, DEFAULT_ORIG);
 
   function ensureDefaults(){
-    if(!Array.isArray(convenios) || convenios.length===0) convenios = DEFAULT_CONV.slice();
-    if(!Array.isArray(profissionais) || profissionais.length===0) profissionais = DEFAULT_PROS.slice();
-    if(!Array.isArray(especialidades) || especialidades.length===0) especialidades = DEFAULT_ESP.slice();
-    if(!Array.isArray(origens) || origens.length===0) origens = DEFAULT_ORIG.slice();
-    convenios.sort((a,b)=>a
+    if(!convenios || !convenios.length) convenios = DEFAULT_CONV.slice();
+    if(!profissionais || !profissionais.length) profissionais = DEFAULT_PROS.slice();
+    if(!especialidades || !especialidades.length) especialidades = DEFAULT_ESP.slice();
+    if(!origens || !origens.length) origens = DEFAULT_ORIG.slice();
+    convenios.sort(localeSort); profissionais.sort(localeSort);
+    especialidades.sort(localeSort); origens.sort(localeSort);
+  }
+  function localeSort(a,b){ return String(a||'').localeCompare(String(b||''), 'pt-BR'); }
+
+  function renderSelect(selId, items){
+    var sel = $(selId); var html='';
+    for(var i=0;i<items.length;i++){ html+='<option value="'+items[i]+'">'+items[i]+'</option>'; }
+    sel.innerHTML = html;
+  }
+
+  function renderAllSelects(){
+    renderSelect('#convenio', convenios);
+    renderSelect('#prof-select', profissionais);
+    renderSelect('#especialidade', especialidades);
+    renderSelect('#origem', origens);
+
+    var fconv = $('#filtro-convenio'), fpro = $('#filtro-profissional');
+    var keepConv = fconv.value, keepPro = fpro.value, i, html;
+    html = '<option value="">Todos os convênios</option>';
+    for(i=0;i<convenios.length;i++){ html+='<option value="'+convenios[i]+'">'+convenios[i]+'</option>'; }
+    fconv.innerHTML = html;
+    html = '<option value="">Todos os profissionais</option>';
+    for(i=0;i<profissionais.length;i++){ html+='<option value="'+profissionais[i]+'">'+profissionais[i]+'</option>'; }
+    fpro.innerHTML = html;
+    for(i=0;i<fconv.options.length;i++){ if(fconv.options[i].value===keepConv){ fconv.value=keepConv; break; } }
+    for(i=0;i<fpro.options.length;i++){ if(fpro.options[i].value===keepPro){ fpro.value=keepPro; break; } }
+  }
+
+  function clearForm(){
+    $('#patient-id').value = '';
+    $('#nome').value = '';
+    $('#nascimento').value = '';
+    $('#faixa-crianca').checked = false;
+    $('#faixa-adulto').checked = false;
+    $('#responsavel-wrap').style.display = 'none';
+    $('#responsavel').value = '';
+    $('#endereco').value = '';
+    $('#contato').value = '';
+    $('#crm').value = '';
+    $('#convenio').selectedIndex = 0;
+    $('#especialidade').selectedIndex = 0;
+    $('#origem').selectedIndex = 0;
+    $('#pro-chips').innerHTML = '';
+  }
+
+  function getSelectedPros(){
+    var chips = $$('#pro-chips .chip'); var out=[]; for(var i=0;i<chips.length;i++){ out.push(chips[i].getAttribute('data-name')); } return out;
+  }
+
+  function addProChip(name){
+    if(!name) return;
+    var cur = getSelectedPros(); if(cur.indexOf(name)!==-1) return;
+    var chip = document.createElement('span');
+    chip.className='chip'; chip.setAttribute('data-name', name);
+    chip.innerHTML = '<span>'+name+'</span><button title="remover" aria-label="remover">&times;</button>';
+    chip.querySelector('button').addEventListener('click', function(){ chip.remove(); });
+    $('#pro-chips').appendChild(chip);
+  }
+
+  function updateFaixaUI(){
+    $('#responsavel-wrap').style.display = $('#faixa-crianca').checked ? '' : 'none';
+  }
+
+  function fillForm(p){
+    $('#patient-id').value = p.id;
+    $('#nome').value = p.nome || '';
+    $('#nascimento').value = p.nascimento || '';
+    if(p.faixa==='Criança'){ $('#faixa-crianca').checked = true; } else if(p.faixa==='Adulto'){ $('#faixa-adulto').checked = true; } else { $('#faixa-crianca').checked=false; $('#faixa-adulto').checked=false; }
+    updateFaixaUI();
+    $('#responsavel').value = p.responsavel || '';
+    $('#endereco').value = p.endereco || '';
+    $('#contato').value = p.contato || '';
+    $('#crm').value = p.crm || '';
+    $('#convenio').value = p.convenio || '';
+    $('#especialidade').value = p.especialidade || '';
+    $('#origem').value = p.origem || '';
+    $('#pro-chips').innerHTML = '';
+    var i; var arr=p.profissionais||[];
+    for(i=0;i<arr.length;i++){ addProChip(arr[i]); }
+    window.scrollTo(0,0);
+  }
+
+  function getFormData(){
+    var nome = $('#nome').value.trim();
+    var nascimento = $('#nascimento').value || '';
+    var faixa = $('#faixa-crianca').checked ? 'Criança' : ($('#faixa-adulto').checked ? 'Adulto' : '');
+    var responsavel = $('#responsavel').value.trim();
+    var endereco = $('#endereco').value.trim();
+    var contato = $('#contato').value.trim();
+    var convenio = $('#convenio').value || '';
+    var especialidade = $('#especialidade').value || '';
+    var origem = $('#origem').value || '';
+    var crm = $('#crm').value.trim();
+    var profissionaisSel = getSelectedPros();
+    return { nome:nome, nascimento:nascimento, faixa:faixa, responsavel:responsavel, endereco:endereco, contato:contato, convenio:convenio, especialidade:especialidade, origem:origem, crm:crm, profissionais:profissionaisSel };
+  }
+
+  function validateForm(d){
+    if(!d.nome) return 'Informe o nome do paciente.';
+    if(!d.faixa) return 'Selecione se é Criança ou Adulto.';
+    if(d.faixa==='Criança' && !d.responsavel) return 'Informe o nome do responsável para pacientes criança.';
+    return null;
+  }
+
+  function renderTable(){
+    var tbody = $('#tabela tbody'); tbody.innerHTML = '';
+    var q = $('#busca').value.toLowerCase().trim();
+    var fConv = $('#filtro-convenio').value;
+    var fPro = $('#filtro-profissional').value;
+    var fFaixa = $('#filtro-faixa').value;
+
+    var filtered = pacientes.filter(function(p){
+      var blob = [p.nome,p.responsavel,p.contato,p.crm,p.origem].filter(Boolean).join(' ').toLowerCase();
+      if(q && blob.indexOf(q)===-1) return false;
+      if(fConv && p.convenio!==fConv) return false;
+      if(fFaixa
