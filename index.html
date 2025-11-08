@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cadastro de Pacientes – Clínica Personart</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111827; --muted:#e5e7eb; --text:#f8fafc;
+      --brand:#F2C8A0; --brand-dark:#E3B189; --danger:#ef4444; --warning:#f59e0b;
+      --chip:#1f2937; --border:#374151;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans";background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);color:var(--text)}
+    header{padding:20px 16px 6px}
+    .topbar{display:flex;align-items:center;gap:14px}
+    .logo-wrap{display:flex;align-items:center;gap:12px}
+    .logo{height:44px;width:auto;display:none;border-radius:8px;background:#0b1220;padding:4px;border:1px solid var(--border)}
+    .brand-name{font-size:clamp(22px,2.6vw,34px);margin:0;letter-spacing:.3px;color:#F2C8A0}
+    .subtitle{color:#cbd5e1;font-size:14px;margin:2px 0 0}
+    .container{max-width:1200px;margin:0 auto;padding:8px 16px 28px}
+    .grid{display:grid;gap:16px}
+    .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media (max-width:720px){.grid.cols-2{grid-template-columns:1fr}}
+    .card{background:radial-gradient(1200px 240px at 10% -10%,rgba(242,200,160,.12),transparent),linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    label{display:block;font-size:13px;color:#cbd5e1;margin-bottom:6px}
+    input[type="text"],input[type="date"],select{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;outline:none}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .radio{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);background:#0b1220;border-radius:999px;cursor:pointer;font-size:13px}
+    .hint{font-size:12px;color:#a3a3a3}
+    .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600}
+    .btn-sm{padding:6px 10px;font-size:12px;border-radius:8px}
+    .btn-primary{background:var(--brand);color:#111}
+    .btn-primary:hover{background:var(--brand-dark)}
+    .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn-danger{background:var(--danger);color:#fff}
+    .section-title{font-size:16px;font-weight:700;margin:2px 0 10px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top;font-size:14px}
+    th{position:sticky;top:0;background:#0f172a;z-index:1}
+    tr:hover{background:rgba(255,255,255,0.02)}
+    .actions{display:flex;gap:8px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+    .toolbar .spacer{flex:1}
+    .muted{color:#9ca3af;font-size:12px}
+    .footer{text-align:center;color:#9ca3af;font-size:12px;padding:12px}
+    .hidden{display:none}
+    .brand-btn{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#0b1220;color:var(--text);cursor:pointer}
+    dialog{border:1px solid var(--border);border-radius:14px;background:#0f172a;color:var(--text);width:min(560px,92vw)}
+    dialog .row{align-items:stretch}
+    dialog input[type="color"]{width:100%;height:40px;background:transparent;border:1px solid var(--border);border-radius:8px;padding:0}
+    dialog .actions{justify-content:flex-end}
+  </style>
+</head>
+<body>
+  <header class="container">
+    <div class="topbar">
+      <div class="logo-wrap">
+        <img id="brand-logo" class="logo" alt="Logo da clínica" />
+        <div>
+          <h1 class="brand-name">Clínica Personart</h1>
+          <p class="subtitle">Registre pacientes, convênios e profissionais. Os dados ficam no seu navegador.</p>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button id="btn-brand" class="brand-btn">Identidade visual</button>
+    </div>
+  </header>
+
+  <main class="container grid cols-2">
+    <section class="card" id="form-card">
+      <div class="section-title">Novo / Editar Paciente</div>
+      <form id="patient-form">
+        <input type="hidden" id="patient-id" />
+        <div class="grid cols-2">
+          <div>
+            <label for="nome">Nome do paciente *</label>
+            <input id="nome" type="text" required placeholder="Ex.: Ana Silva" />
+          </div>
+          <div>
+            <label for="nascimento">Data de nascimento</label>
+            <input id="nascimento" type="date" />
+            <div class="hint" id="idade-hint"></div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px">
+          <span class="muted">Faixa etária:</span>
+          <label class="radio"><input type="radio" name="faixa" value="Criança" id="faixa-crianca" /> Criança</label>
+          <label class="radio"><input type="radio" name="faixa" value="Adulto" id="faixa-adulto" /> Adulto</label>
+        </div>
+
+        <div id="responsavel-wrap" style="margin-top:10px;display:none;">
+          <label for="responsavel">Nome do responsável (obrigatório para criança)</label>
+          <input id="responsavel" type="text" placeholder="Ex.: Maria de Souza" />
+        </div>
+
+        <div class="grid cols-2" style="margin-top:10px">
+          <div>
+            <label for="endereco">Endereço</label>
+            <input id="endereco" type="text" placeholder="Rua, nº, bairro, cidade" />
+          </div>
+          <div>
+            <label for="contato">Contato (telefone/e-mail)</label>
+            <input id="contato" type="text" placeholder="(15) 9 9999-9999 / paciente@exemplo.com" />
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-top:10px">
+          <div>
+            <label for="convenio">Convênio</label>
+            <div class="row">
+              <select id="convenio" style="flex:1"></select>
+              <button class="btn btn-outline" type="button" id="btn-add-convenio">+ convênio</button>
+            </div>
+            <div class="hint">Lista editável. Adicione novos convênios quando precisar.</div>
+          </div>
+
+          <div>
+            <label for="profissional-select">Profissionais que estão atendendo</label>
+            <div class="row">
+              <select id="profissional-select" style="flex:1"></select>
+              <button class="btn btn-outline" type="button" id="btn-add-prof-selection">Adicionar</button>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <input type="text" id="novo-profissional" placeholder="Novo profissional" />
+              <button class="btn btn-outline" type="button" id="btn-add-profissional">+ profissional</button>
+            </div>
+            <div id="pro-preview" class="chips" style="margin-top:6px"></div>
+          </div>
+        </div>
+
+        <div class="grid cols-2" style="margin-top:10px">
+          <div>
+            <label for="especialidade-select">Especialidades</label>
+            <div class="row">
+              <select id="especialidade-select" style="flex:1"></select>
+              <button class="btn btn-outline" type="button" id="btn-add-esp-selection">Adicionar</button>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <input type="text" id="nova-especialidade" placeholder="Nova especialidade" />
+              <button class="btn btn-outline" type="button" id="btn-add-especialidade">+ especialidade</button>
+            </div>
+            <div id="esp-preview" class="chips" style="margin-top:6px"></div>
+          </div>
+
+          <div>
+            <label for="crm">CRM do médico que encaminhou</label>
+            <input id="crm" type="text" placeholder="Ex.: CRM-SP 123456" />
+          </div>
+        </div>
+
+        <div style="margin-top:10px">
+          <label for="origem">Como conheceu a clínica?</label>
+          <input id="origem" type="text" list="lista-origens" placeholder="Ex.: Indicação" />
+          <datalist id="lista-origens">
+            <option value="Indicação"></option>
+            <option value="Instagram"></option>
+            <option value="Site"></option>
+            <option value="Google"></option>
+          </datalist>
+        </div>
+
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary" type="submit">Salvar paciente</button>
+          <button class="btn btn-outline" type="button" id="btn-limpar">Limpar formulário</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-title">Pacientes</div>
+      <div class="toolbar">
+        <input id="busca" type="text" placeholder="Buscar por nome, responsável, contato, CRM ou origem" style="min-width:240px" />
+        <select id="filtro-convenio"><option value="">Todos os convênios</option></select>
+        <select id="filtro-profissional"><option value="">Todos os profissionais</option></select>
+        <select id="filtro-faixa">
+          <option value="">Todas as faixas</option>
+          <option value="Criança">Criança</option>
+          <option value="Adulto">Adulto</option>
+        </select>
+        <button class="btn btn-outline" id="btn-ver-todos">Ver todos</button>
+        <div class="spacer"></div>
+        <button class="btn btn-outline" id="btn-exportar">Exportar CSV</button>
+        <button class="btn btn-outline" id="btn-backup">Baixar backup (.json)</button>
+        <label class="btn btn-outline" for="importar" style="cursor:pointer">Importar backup</label>
+        <input id="importar" type="file" accept="application/json" style="display:none" />
+        <button class="btn btn-danger btn-sm" id="btn-zerar" title="Apagar todos os pacientes">Limpar dados</button>
+      </div>
+
+      <div id="lista-aviso" class="muted">A lista está oculta. Clique em “Ver todos” ou use a busca/filtros.</div>
+
+      <div id="table-wrap" class="hidden" style="overflow:auto;max-height:55vh;border:1px solid var(--border);border-radius:12px;">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th style="min-width:180px">Paciente</th>
+              <th>Nasc.</th>
+              <th>Faixa</th>
+              <th>Responsável</th>
+              <th>Endereço</th>
+              <th>Contato</th>
+              <th>Convênio</th>
+              <th style="min-width:180px">Profissionais</th>
+              <th style="min-width:160px">Especialidades</th>
+              <th>CRM</th>
+              <th>Origem</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="muted" id="contador" style="margin-top:8px"></div>
+    </section>
+  </main>
+
+  <footer class="footer">LGPD: mantenha backups seguros. Os dados ficam apenas neste navegador, a menos que você exporte/compartilhe.</footer>
+
+  <dialog id="brand-dialog">
+    <form method="dialog">
+      <h3 style="margin:0 0 10px;">Identidade visual</h3>
+      <div class="row">
+        <div style="flex:1;">
+          <label for="brand-color">Cor principal</label>
+          <input id="brand-color" type="color" value="#F2C8A0" />
+        </div>
+        <div style="flex:1;">
+          <label for="brand-dark">Cor escura (hover)</label>
+          <input id="brand-dark" type="color" value="#E3B189" />
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label for="brand-logo-input">Logo (PNG/JPG/SVG)</label>
+        <input id="brand-logo-input" type="file" accept="image/*" />
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-outline" id="brand-cancel">Fechar</button>
+        <button class="btn btn-primary" id="brand-save">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const $ = (s,r=document)=>r.querySelector(s);
+    const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+
+    const STORAGE_KEYS = {
+      PACIENTES:'personart.pacientes.v1',
+      CONVENIOS:'personart.convenios.v1',
+      PROFISSIONAIS:'personart.profissionais.v1',
+      ESPECIALIDADES:'personart.especialidades.v1',
+      BRAND:'personart.brand.v1'
+    };
+
+    const DEFAULT_CONVENIOS = ['Funserv','Danamed','Gama Saúde','Fusex','BlueSaúde','Unimed Campinas','Ossel','Ofebas'];
+    const DEFAULT_PROFISSIONAIS = ['Bruno Alexandre','Janaina Davi','Stephanie Magon','Soraia Souza','Simone Agrela','Maria Pedroso'];
+    const DEFAULT_ESPECIALIDADES = ['Psicologia','Fonoaudiologia','Terapia Ocupacional','Nutrição'];
+
+    const loadJSON=(k,f)=>{try{return JSON.parse(localStorage.getItem(k))??f;}catch{return f;}};
+    const saveJSON=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+
+    const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const parseISODate=(iso)=>{if(!iso||!/^\d{4}-\d{2}-\d{2}$/.test(iso))return null;const [y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d);};
+    const formatShort=(iso)=>{const d=parseISODate(iso);if(!d)return'';const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=String(d.getFullYear()).slice(-2);return `${dd}/${mm}/${yy}`;};
+
+    let pacientes=loadJSON(STORAGE_KEYS.PACIENTES,[]);
+    let convenios=loadJSON(STORAGE_KEYS.CONVENIOS,DEFAULT_CONVENIOS);
+    let profissionais=loadJSON(STORAGE_KEYS.PROFISSIONAIS,DEFAULT_PROFISSIONAIS);
+    let especialidades=loadJSON(STORAGE_KEYS.ESPECIALIDADES,DEFAULT_ESPECIALIDADES);
+    let brand=loadJSON(STORAGE_KEYS.BRAND,{color:'#F2C8A0',dark:'#E3B189',logo:null,name:'Clínica Personart'});
+
+    let selectedProfessionals=[];
+    let selectedEspecialidades=[];
+    let listVisible=false;
+
+    function applyBrand(){
+      document.documentElement.style.setProperty('--brand',brand.color||'#F2C8A0');
+      document.documentElement.style.setProperty('--brand-dark',brand.dark||'#E3B189');
+      const logo=$('#brand-logo'); if(brand.logo){logo.src=brand.logo;logo.style.display='block';}else{logo.style.display='none';}
+      if(brand.name) $('.brand-name').textContent=brand.name;
+      $('#brand-color').value=brand.color||'#F2C8A0'; $('#brand-dark').value=brand.dark||'#E3B189';
+    }
+
+    function renderConvenios(){
+      const sel=$('#convenio'); sel.innerHTML=''; for(const c of convenios){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);}
+      const filtro=$('#filtro-convenio'); const current=filtro.value;
+      filtro.innerHTML='<option value="">Todos os convênios</option>'+convenios.map(c=>`<option value="${c}">${c}</option>`).join('');
+      if([...filtro.options].some(o=>o.value===current)) filtro.value=current; else filtro.value='';
+      if(sel.options.length>0) sel.selectedIndex=0;
+    }
+
+    function renderProfissionaisSelect(){
+      const sel=$('#profissional-select'); sel.innerHTML='';
+      profissionais.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
+      const filtro=$('#filtro-profissional'); const current=filtro.value;
+      filtro.innerHTML='<option value="">Todos os profissionais</option>'+profissionais.map(p=>`<option value="${p}">${p}</option>`).join('');
+      if([...filtro.options].some(o=>o.value===current)) filtro.value=current; else filtro.value='';
+    }
+
+    function renderEspecialidadesSelect(){
+      const sel=$('#especialidade-select'); sel.innerHTML='';
+      especialidades.forEach(e=>{const o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+    }
+
+    function updateProPreview(){
+      const pv=$('#pro-preview'); pv.innerHTML='';
+      selectedProfessionals.forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent=n;pv.appendChild(s);});
+    }
+
+    function updateEspPreview(){
+      const pv=$('#esp-preview'); pv.innerHTML='';
+      selectedEspecialidades.forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent=n;pv.appendChild(s);});
+    }
+
+    function clearForm(){
+      $('#patient-id').value='';
+      $('#nome').value='';
+      $('#nascimento').value='';
+      $('#idade-hint').textContent='';
+      $('#faixa-crianca').checked=false; $('#faixa-adulto').checked=false;
+      $('#responsavel').value=''; $('#responsavel-wrap').style.display='none';
+      $('#endereco').value=''; $('#contato').value='';
+      $('#convenio').selectedIndex=0;
+      $('#crm').value=''; $('#origem').value='';
+      selectedProfessionals=[]; selectedEspecialidades=[];
+      updateProPreview(); updateEspPreview();
+    }
+
+    function fillForm(p){
+      $('#patient-id').value=p.id;
+      $('#nome').value=p.nome||'';
+      $('#nascimento').value=p.nascimento||'';
+      const ageHint = (()=>{
+        const d=parseISODate(p.nascimento); if(!d) return '';
+        const t=new Date(); let a=t.getFullYear()-d.getFullYear();const m=t.getMonth()-d.getMonth();if(m<0||(m===0&&t.getDate()<d.getDate()))a--;
+        return a>=0?`${a} anos`:'';
+      })();
+      $('#idade-hint').textContent=ageHint;
+      if(p.faixa==='Criança'){ $('#faixa-crianca').checked=true; $('#responsavel-wrap').style.display=''; }
+      else if(p.faixa==='Adulto'){ $('#faixa-adulto').checked=true; $('#responsavel-wrap').style.display='none'; }
+      else { $('#faixa-crianca').checked=false; $('#faixa-adulto').checked=false; $('#responsavel-wrap').style.display='none'; }
+      $('#responsavel').value=p.responsavel||'';
+      $('#endereco').value=p.endereco||'';
+      $('#contato').value=p.contato||'';
+      $('#convenio').value=p.convenio||'';
+      $('#crm').value=p.crm||'';
+      $('#origem').value=p.origem||'';
+      selectedProfessionals=Array.isArray(p.profissionais)?p.profissionais.slice():[];
+      selectedEspecialidades=Array.isArray(p.especialidades)?p.especialidades.slice():[];
+      updateProPreview(); updateEspPreview();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function getFormData(){
+      const nome=$('#nome').value.trim();
+      const nascimento=$('#nascimento').value||'';
+      const faixa=$('#faixa-crianca').checked?'Criança':($('#faixa-adulto').checked?'Adulto':'');
+      const responsavel=$('#responsavel').value.trim();
+      const endereco=$('#endereco').value.trim();
+      const contato=$('#contato').value.trim();
+      const convenio=$('#convenio').value||'';
+      const crm=$('#crm').value.trim();
+      const origem=$('#origem').value.trim();
+      return {
+        nome, nascimento, faixa, responsavel, endereco, contato, convenio,
+        profissionais:selectedProfessionals.slice(),
+        especialidades:selectedEspecialidades.slice(),
+        crm, origem
+      };
+    }
+
+    function validateForm(d){
+      if(!d.nome) return 'Informe o nome do paciente.';
+      if(!d.faixa) return 'Selecione se é Criança ou Adulto.';
+      if(d.faixa==='Criança' && !d.responsavel) return 'Informe o nome do responsável para pacientes criança.';
+      return null;
+    }
+
+    $('#nascimento').addEventListener('change',()=>{
+      const iso=$('#nascimento').value; const d=parseISODate(iso);
+      if(!d){$('#idade-hint').textContent='';return;}
+      const t=new Date(); let a=t.getFullYear()-d.getFullYear(); const m=t.getMonth()-d.getMonth(); if(m<0||(m===0&&t.getDate()<d.getDate())) a--;
+      $('#idade-hint').textContent = a>=0?`${a} anos`:'';
+      if(a!=null){ if(a<18){$('#faixa-crianca').checked=true; $('#responsavel-wrap').style.display='';} else {$('#faixa-adulto').checked=true; $('#responsavel-wrap').style.display='none';} }
+    });
+    $('#faixa-crianca').addEventListener('change',()=>{$('#responsavel-wrap').style.display=$('#faixa-crianca').checked?'':'none';});
+    $('#faixa-adulto').addEventListener('change',()=>{$('#responsavel-wrap').style.display='none';});
+
+    $('#btn-add-prof-selection').addEventListener('click',()=>{
+      const v=$('#profissional-select').value; if(v && !selectedProfessionals.includes(v)){selectedProfessionals.push(v); updateProPreview();}
+    });
+    $('#btn-add-profissional').addEventListener('click',()=>{
+      const novo=$('#novo-profissional').value.trim(); if(!novo) return;
+      if(!profissionais.some(p=>p.toLowerCase()===novo.toLowerCase())){profissionais.push(novo); profissionais.sort((a,b)=>a.localeCompare(b,'pt-BR')); saveJSON(STORAGE_KEYS.PROFISSIONAIS,profissionais); renderProfissionaisSelect();}
+      if(!selectedProfessionals.includes(novo)){selectedProfessionals.push(novo); updateProPreview();}
+      $('#novo-profissional').value='';
+    });
+
+    $('#btn-add-esp-selection').addEventListener('click',()=>{
+      const v=$('#especialidade-select').value; if(v && !selectedEspecialidades.includes(v)){selectedEspecialidades.push(v); updateEspPreview();}
+    });
+    $('#btn-add-especialidade').addEventListener('click',()=>{
+      const nova=$('#nova-especialidade').value.trim(); if(!nova) return;
+      if(!especialidades.some(e=>e.toLowerCase()===nova.toLowerCase())){especialidades.push(nova); especialidades.sort((a,b)=>a.localeCompare(b,'pt-BR')); saveJSON(STORAGE_KEYS.ESPECIALIDADES,especialidades); renderEspecialidadesSelect();}
+      if(!selectedEspecialidades.includes(nova)){selectedEspecialidades.push(nova); updateEspPreview();}
+      $('#nova-especialidade').value='';
+    });
+
+    $('#patient-form').addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const id=$('#patient-id').value||uid();
+      const data=getFormData();
+      const err=validateForm(data); if(err){alert(err);return;}
+      const idx=pacientes.findIndex(p=>p.id===$('#patient-id').value);
+      const rec={id,...data};
+      if(idx>=0) pacientes[idx]=rec; else pacientes.push(rec);
+      saveJSON(STORAGE_KEYS.PACIENTES,pacientes);
+      clearForm();
+    });
+
+    $('#btn-limpar').addEventListener('click',clearForm);
+
+    $('#btn-add-convenio').addEventListener('click',()=>{
+      let novo=prompt('Novo convênio:'); if(!novo) return; novo=novo.trim(); if(!novo) return;
+      const exists=convenios.some(c=>c.toLowerCase()===novo.toLowerCase());
+      if(!exists){convenios.push(novo); convenios.sort((a,b)=>a.localeCompare(b,'pt-BR')); saveJSON(STORAGE_KEYS.CONVENIOS,convenios); renderConvenios(); $('#convenio').value=novo;}
+    });
+
+    function renderTable(){
+      const tbody=$('#tabela tbody'); tbody.innerHTML='';
+      const q=$('#busca').value.toLowerCase().trim();
+      const fConv=$('#filtro-convenio').value;
+      const fPro=$('#filtro-profissional').value;
+      const fFaixa=$('#filtro-faixa').value;
+      const show=listVisible || q || fConv || fPro || fFaixa;
+      $('#table-wrap').classList.toggle('hidden',!show);
+      $('#lista-aviso').classList.toggle('hidden',!!show);
+      if(!show){$('#contador').textContent=''; return;}
+
+      const filtered=pacientes.filter(p=>{
+        const blob=[p.nome,p.responsavel,p.contato,p.crm,p.origem].filter(Boolean).join(' ').toLowerCase();
+        if(q && !blob.includes(q)) return false;
+        if(fConv && p.convenio!==fConv) return false;
+        if(fFaixa && p.faixa!==fFaixa) return false;
+        if(fPro && !(Array.isArray(p.profissionais) && p.profissionais.includes(fPro))) return false;
+        return true;
+      }).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR'));
+
+      for(const p of filtered){
+        const tr=document.createElement('tr');
+
+        const tdNome=document.createElement('td'); const strong=document.createElement('strong'); strong.textContent=p.nome||''; tdNome.appendChild(strong);
+
+        const tdNasc=document.createElement('td'); tdNasc.textContent=formatShort(p.nascimento);
+
+        const tdFaixa=document.createElement('td'); tdFaixa.textContent=p.faixa||'';
+
+        const tdResp=document.createElement('td'); tdResp.textContent=p.faixa==='Criança'?(p.responsavel||''):'';
+
+        const tdEnd=document.createElement('td'); tdEnd.textContent=p.endereco||'';
+
+        const tdContato=document.createElement('td'); tdContato.textContent=p.contato||'';
+
+        const tdConv=document.createElement('td'); tdConv.textContent=p.convenio||'';
+
+        const tdPro=document.createElement('td'); (p.profissionais||[]).forEach(x=>{const s=document.createElement('span'); s.className='chip'; s.textContent=x; tdPro.appendChild(s); tdPro.appendChild(document.createTextNode(' '));});
+
+        const tdEsp=document.createElement('td'); (p.especialidades||[]).forEach(x=>{const s=document.createElement('span'); s.className='chip'; s.textContent=x; tdEsp.appendChild(s); tdEsp.appendChild(document.createTextNode(' '));});
+
+        const tdCRM=document.createElement('td'); tdCRM.textContent=p.crm||'';
+
+        const tdOrig=document.createElement('td'); tdOrig.textContent=p.origem||'';
+
+        const tdAcoes=document.createElement('td'); tdAcoes.className='actions';
+        const btnE=document.createElement('button'); btnE.className='btn btn-outline'; btnE.dataset.acao='editar'; btnE.dataset.id=p.id; btnE.textContent='Editar';
+        const btnX=document.createElement('button'); btnX.className='btn btn-danger'; btnX.dataset.acao='excluir'; btnX.dataset.id=p.id; btnX.textContent='Excluir';
+        tdAcoes.appendChild(btnE); tdAcoes.appendChild(btnX);
+
+        tr.appendChild(tdNome);
+        tr.appendChild(tdNasc);
+        tr.appendChild(tdFaixa);
+        tr.appendChild(tdResp);
+        tr.appendChild(tdEnd);
+        tr.appendChild(tdContato);
+        tr.appendChild(tdConv);
+        tr.appendChild(tdPro);
+        tr.appendChild(tdEsp);
+        tr.appendChild(tdCRM);
+        tr.appendChild(tdOrig);
+        tr.appendChild(tdAcoes);
+        tbody.appendChild(tr);
+      }
+      $('#contador').textContent=`${filtered.length} paciente${filtered.length===1?'':'s'}`;
+    }
+
+    $('#tabela').addEventListener('click',e=>{
+      const btn=e.target.closest('button[data-acao]'); if(!btn) return;
+      const id=btn.getAttribute('data-id'); const idx=pacientes.findIndex(p=>p.id===id); if(idx< 0) return;
+      if(btn.dataset.acao==='editar'){fillForm(pacientes[idx]);}
+      else if(btn.dataset.acao==='excluir'){if(confirm('Excluir este paciente?')){pacientes.splice(idx,1); saveJSON(STORAGE_KEYS.PACIENTES,pacientes); renderTable();}}
+    });
+
+    ['busca','filtro-convenio','filtro-profissional','filtro-faixa'].forEach(id=>{
+      document.getElementById(id).addEventListener('input',renderTable);
+      document.getElementById(id).addEventListener('change',renderTable);
+    });
+
+    document.getElementById('btn-ver-todos').addEventListener('click',()=>{listVisible=true; renderTable();});
+
+    function toCSV(rows){
+      const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+      const header=['id','nome','nascimento(dd/mm/aa)','faixa','responsavel','endereco','contato','convenio','profissionais','especialidades','crm','origem'];
+      const lines=[header.join(',')];
+      for(const r of rows){
+        const arr=[r.id,r.nome,formatShort(r.nascimento),r.faixa,r.responsavel,r.endereco,r.contato,r.convenio,(r.profissionais||[]).join(' | '),(r.especialidades||[]).join(' | '),r.crm,r.origem];
+        lines.push(arr.map(esc).join(','));
+      }
+      return lines.join('\n');
+    }
+
+    function download(filename,content,type='text/plain'){
+      const blob=new Blob([content],{type});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    $('#btn-exportar').addEventListener('click',()=>{download('pacientes_personart.csv',toCSV(pacientes),'text/csv;charset=utf-8');});
+    $('#btn-backup').addEventListener('click',()=>{download('backup_personart.json',JSON.stringify({pacientes,convenios,profissionais,especialidades},null,2),'application/json');});
+    $('#importar').addEventListener('change',async(ev)=>{
+      const file=ev.target.files?.[0]; if(!file) return;
+      try{
+        const text=await file.text(); const data=JSON.parse(text);
+        if(Array.isArray(data.pacientes)) pacientes=data.pacientes; else if(Array.isArray(data)) pacientes=data; else throw new Error('Formato inválido');
+        if(Array.isArray(data.convenios)) convenios=data.convenios;
+        if(Array.isArray(data.profissionais)) profissionais=data.profissionais;
+        if(Array.isArray(data.especialidades)) especialidades=data.especialidades;
+        saveJSON(STORAGE_KEYS.PACIENTES,pacientes);
+        saveJSON(STORAGE_KEYS.CONVENIOS,convenios);
+        saveJSON(STORAGE_KEYS.PROFISSIONAIS,profissionais);
+        saveJSON(STORAGE_KEYS.ESPECIALIDADES,especialidades);
+        renderConvenios(); renderProfissionaisSelect(); renderEspecialidadesSelect(); renderTable();
+        alert('Backup importado com sucesso.');
+      }catch(err){alert('Falha ao importar: '+err.message);}
+      finally{ev.target.value='';}
+    });
+
+    $('#btn-zerar').addEventListener('click',()=>{if(!confirm('Tem certeza que deseja apagar TODO o banco local?')) return; pacientes=[]; saveJSON(STORAGE_KEYS.PACIENTES,pacientes); renderTable();});
+
+    const brandDialog=$('#brand-dialog');
+    $('#btn-brand').addEventListener('click',()=>{brandDialog.showModal();});
+    $('#brand-cancel').addEventListener('click',(e)=>{e.preventDefault(); brandDialog.close();});
+    $('#brand-save').addEventListener('click',async(e)=>{
+      e.preventDefault();
+      const color=$('#brand-color').value || brand.color;
+      const dark=$('#brand-dark').value || brand.dark;
+      const file=$('#brand-logo-input').files[0];
+      let logoData=brand.logo;
+      if(file){
+        logoData=await new Promise((res,rej)=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file);});
+      }
+      brand={...brand,color,dark,logo:logoData}; saveJSON(STORAGE_KEYS.BRAND,brand); applyBrand(); brandDialog.close();
+    });
+
+    (function init(){
+      if(!Array.isArray(convenios)||convenios.length===0) convenios=DEFAULT_CONVENIOS.slice();
+      if(!Array.isArray(profissionais)||profissionais.length===0) profissionais=DEFAULT_PROFISSIONAIS.slice();
+      if(!Array.isArray(especialidades)||especialidades.length===0) especialidades=DEFAULT_ESPECIALIDADES.slice();
+      convenios.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      profissionais.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      especialidades.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      renderConvenios(); renderProfissionaisSelect(); renderEspecialidadesSelect();
+      applyBrand(); renderTable();
+    })();
+  </script>
+</body>
+</html>
