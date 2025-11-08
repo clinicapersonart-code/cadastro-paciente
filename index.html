@@ -363,4 +363,161 @@
       var blob = [p.nome,p.responsavel,p.contato,p.crm,p.origem].filter(Boolean).join(' ').toLowerCase();
       if(q && blob.indexOf(q)===-1) return false;
       if(fConv && p.convenio!==fConv) return false;
-      if(fFaixa
+      if(fFaixa && p.faixa!==fFaixa) return false;
+      if(fPro && !(p.profissionais && p.profissionais.indexOf(fPro)!==-1)) return false;
+      return true;
+    }).sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||'','pt-BR'); });
+
+    for(var i=0;i<filtered.length;i++){
+      var p=filtered[i];
+      var tr = document.createElement('tr');
+      var tdNome=document.createElement('td'); tdNome.innerHTML='<strong>'+(p.nome||'')+'</strong>';
+      var tdNasc=document.createElement('td'); tdNasc.textContent=formatDateBR(p.nascimento);
+      var tdFaixa=document.createElement('td'); tdFaixa.textContent=p.faixa||'';
+      var tdResp=document.createElement('td'); tdResp.textContent=p.faixa==='Criança'?(p.responsavel||''):'';
+      var tdEnd=document.createElement('td'); tdEnd.textContent=p.endereco||'';
+      var tdContato=document.createElement('td'); tdContato.textContent=p.contato||'';
+      var tdConv=document.createElement('td'); tdConv.textContent=p.convenio||'';
+      var tdEsp=document.createElement('td'); tdEsp.textContent=p.especialidade||'';
+      var tdPros=document.createElement('td');
+      var j, arr=p.profissionais||[]; for(j=0;j<arr.length;j++){ var s=document.createElement('span'); s.className='chip'; s.textContent=arr[j]; tdPros.appendChild(s); tdPros.appendChild(document.createTextNode(' ')); }
+      var tdCrm=document.createElement('td'); tdCrm.textContent=p.crm||'';
+      var tdOrig=document.createElement('td'); tdOrig.textContent=p.origem||'';
+      var tdAcoes=document.createElement('td');
+      var bE=document.createElement('button'); bE.className='btn btn-outline btn-xs'; bE.textContent='Editar';
+      var bX=document.createElement('button'); bX.className='btn btn-danger btn-xs'; bX.textContent='Excluir';
+      bE.addEventListener('click', (function(pp){ return function(){ fillForm(pp); };})(p));
+      bX.addEventListener('click', (function(pid){ return function(){ if(confirm('Excluir este paciente?')){ pacientes = pacientes.filter(function(x){return x.id!==pid;}); saveJSON(STORAGE_KEYS.PAC, pacientes); renderTable(); } };})(p.id));
+      tdAcoes.appendChild(bE); tdAcoes.appendChild(bX);
+      [tdNome,tdNasc,tdFaixa,tdResp,tdEnd,tdContato,tdConv,tdEsp,tdPros,tdCrm,tdOrig,tdAcoes].forEach(function(td){ tr.appendChild(td); });
+      tbody.appendChild(tr);
+    }
+    $('#contador').textContent = filtered.length+' paciente'+(filtered.length===1?'':'s');
+  }
+
+  // Eventos UI (compatíveis)
+  $('#nascimento').addEventListener('change', function(){
+    var iso = $('#nascimento').value; if(!iso) return;
+    var d = parseISO(iso); if(!d) return;
+    var now=new Date(); var age=now.getFullYear()-d.getFullYear();
+    var m=now.getMonth()-d.getMonth();
+    if(m<0 || (m===0 && now.getDate()<d.getDate())) age--;
+    if(age<18){ $('#faixa-crianca').checked=true; } else { $('#faixa-adulto').checked=true; }
+    updateFaixaUI();
+  });
+  $('#faixa-crianca').addEventListener('change', updateFaixaUI);
+  $('#faixa-adulto').addEventListener('change', updateFaixaUI);
+  // também reage a "click" (alguns Android antigos só disparam click)
+  $('#faixa-crianca').addEventListener('click', updateFaixaUI);
+  $('#faixa-adulto').addEventListener('click', updateFaixaUI);
+
+  // Mestre: adicionar novos itens
+  $('#btn-add-convenio').addEventListener('click', function(){
+    var v = prompt('Novo convênio:'); if(!v) return; v=v.trim(); if(!v) return;
+    var i, found=false; for(i=0;i<convenios.length;i++){ if(convenios[i].toLowerCase()===v.toLowerCase()) found=true; }
+    if(!found){ convenios.push(v); convenios.sort(localeSort); saveJSON(STORAGE_KEYS.CONV, convenios); renderAllSelects(); $('#convenio').value=v; }
+  });
+  $('#btn-add-esp').addEventListener('click', function(){
+    var v = prompt('Nova especialidade:'); if(!v) return; v=v.trim(); if(!v) return;
+    var i, found=false; for(i=0;i<especialidades.length;i++){ if(especialidades[i].toLowerCase()===v.toLowerCase()) found=true; }
+    if(!found){ especialidades.push(v); especialidades.sort(localeSort); saveJSON(STORAGE_KEYS.ESP, especialidades); renderAllSelects(); $('#especialidade').value=v; }
+  });
+  $('#btn-add-origem').addEventListener('click', function(){
+    var v = prompt('Nova origem (como conheceu a clínica):'); if(!v) return; v=v.trim(); if(!v) return;
+    var i, found=false; for(i=0;i<origens.length;i++){ if(origens[i].toLowerCase()===v.toLowerCase()) found=true; }
+    if(!found){ origens.push(v); origens.sort(localeSort); saveJSON(STORAGE_KEYS.ORIG, origens); renderAllSelects(); $('#origem').value=v; }
+  });
+  $('#btn-add-prof-novo').addEventListener('click', function(){
+    var v = prompt('Novo(a) profissional:'); if(!v) return; v=v.trim(); if(!v) return;
+    var i, found=false; for(i=0;i<profissionais.length;i++){ if(profissionais[i].toLowerCase()===v.toLowerCase()) found=true; }
+    if(!found){ profissionais.push(v); profissionais.sort(localeSort); saveJSON(STORAGE_KEYS.PROS, profissionais); renderAllSelects(); $('#prof-select').value=v; }
+  });
+  $('#btn-prof-adicionar').addEventListener('click', function(){ addProChip($('#prof-select').value); });
+
+  // Submit
+  $('#patient-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var id = $('#patient-id').value || uid();
+    var data = getFormData();
+    var err = validateForm(data); if(err){ alert(err); return; }
+    var i, idx=-1; for(i=0;i<pacientes.length;i++){ if(pacientes[i].id===id){ idx=i; break; } }
+    var rec = { id:id, nome:data.nome, nascimento:data.nascimento, faixa:data.faixa, responsavel:data.responsavel, endereco:data.endereco, contato:data.contato, convenio:data.convenio, especialidade:data.especialidade, origem:data.origem, crm:data.crm, profissionais:data.profissionais };
+    if(idx>=0) pacientes[idx]=rec; else pacientes.push(rec);
+    saveJSON(STORAGE_KEYS.PAC, pacientes);
+    clearForm();
+    if($('#wrap-tabela').style.display!=='none') renderTable();
+    alert('Paciente salvo.');
+  });
+
+  // Limpar / Ver / Filtros
+  $('#btn-limpar').addEventListener('click', clearForm);
+  $('#btn-ver').addEventListener('click', function(){
+    var wrap = $('#wrap-tabela');
+    if(wrap.style.display==='none'){ wrap.style.display='block'; renderTable(); $('#btn-ver').textContent='Ocultar'; }
+    else { wrap.style.display='none'; $('#btn-ver').textContent='Ver todos'; }
+  });
+  ['busca','filtro-convenio','filtro-profissional','filtro-faixa'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){ if($('#wrap-tabela').style.display!=='none') renderTable(); });
+    document.getElementById(id).addEventListener('change', function(){ if($('#wrap-tabela').style.display!=='none') renderTable(); });
+  });
+
+  // Export / Import / Zerar
+  function download(filename, content, type){
+    var blob = new Blob([content], {type:type||'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+  $('#btn-exportar').addEventListener('click', function(){
+    var payload = { pacientes:pacientes, convenios:convenios, profissionais:profissionais, especialidades:especialidades, origens:origens, ts:new Date().toISOString() };
+    download('backup_personart.json', JSON.stringify(payload, null, 2), 'application/json');
+  });
+  $('#importar').addEventListener('change', function(ev){
+    var file = ev && ev.target && ev.target.files && ev.target.files[0]; if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(String(reader.result||'{}'));
+        if(data && data.pacientes && data.pacientes.splice) pacientes = data.pacientes;
+        else if(data && data.splice) pacientes = data;
+        else throw new Error('Formato inválido');
+        if(data.convenios && data.convenios.splice) convenios = data.convenios;
+        if(data.profissionais && data.profissionais.splice) profissionais = data.profissionais;
+        if(data.especialidades && data.especialidades.splice) especialidades = data.especialidades;
+        if(data.origens && data.origens.splice) origens = data.origens;
+        saveJSON(STORAGE_KEYS.PAC, pacientes);
+        saveJSON(STORAGE_KEYS.CONV, convenios);
+        saveJSON(STORAGE_KEYS.PROS, profissionais);
+        saveJSON(STORAGE_KEYS.ESP, especialidades);
+        saveJSON(STORAGE_KEYS.ORIG, origens);
+        renderAllSelects();
+        if($('#wrap-tabela').style.display!=='none') renderTable();
+        alert('Backup importado com sucesso.');
+      }catch(e){
+        alert('Falha ao importar: '+(e && e.message ? e.message : e));
+      }finally{
+        ev.target.value='';
+      }
+    };
+    reader.readAsText(file);
+  });
+  $('#btn-zerar').addEventListener('click', function(){
+    if(!confirm('Tem certeza que deseja apagar TODOS os pacientes deste navegador?')) return;
+    pacientes = []; saveJSON(STORAGE_KEYS.PAC, pacientes);
+    if($('#wrap-tabela').style.display!=='none') renderTable();
+  });
+
+  $('#btn-visual').addEventListener('click', function(){
+    alert('Identidade visual ajustada às cores da Personart (bege + verde petróleo).');
+  });
+
+  // Init
+  (function init(){
+    ensureDefaults();
+    renderAllSelects();
+    clearForm();
+    $('#wrap-tabela').style.display='none';
+  })();
+})();
+</script>
+</body>
+</html>
