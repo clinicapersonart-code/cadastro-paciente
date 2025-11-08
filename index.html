@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cadastro de Pacientes — Clínica Personart</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#111827; --text:#f8fafc; --muted:#cbd5e1;
+    --brand:#f4c49b; /* bege do logo */
+    --brand-dark:#e7b88f;
+    --accent:#0d4442; /* verde petróleo do logo */
+    --chip:#1f2937; --border:#374151; --danger:#ef4444; --warning:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial;color:var(--text);
+       background: radial-gradient(1200px 300px at 10% -10%, rgba(13,68,66,.25), transparent),
+                   linear-gradient(180deg,#0b1220 0%, #0f172a 100%)}
+  header{padding:24px 16px 8px}
+  .container{max-width:1200px;margin:0 auto;padding:8px 16px 32px}
+  h1{margin:0 0 8px;font-size:clamp(22px,2.6vw,36px);letter-spacing:.3px}
+  .brand{color:var(--brand)}
+  .subtitle{color:#a8b3c7;font-size:14px;margin:0}
+  .grid{display:grid;gap:16px}
+  .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  @media(max-width:820px){.grid.cols-2{grid-template-columns:1fr}}
+  .card{background:
+        radial-gradient(1000px 220px at 8% -8%, rgba(244,196,155,.08), transparent),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+        border:1px solid var(--border); border-radius:16px; padding:18px; box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input[type="text"], input[type="date"], input[type="tel"], input[type="email"], select, textarea{
+    width:100%; background:#0b1220; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; outline:none
+  }
+  textarea{resize:vertical; min-height:72px}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .radio{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);background:#0b1220;border-radius:999px;cursor:pointer;font-size:13px}
+  .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700}
+  .btn-primary{background:var(--brand);color:#1f1b16}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+  .btn-danger{background:var(--danger);color:#fff}
+  .btn-xs{padding:6px 10px;border-radius:10px;font-size:12px}
+  .muted{color:#9ca3af;font-size:12px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--chip);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:12px;display:inline-flex;align-items:center;gap:8px}
+  .chip button{all:unset;cursor:pointer;color:#fca5a5}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:top;font-size:14px}
+  th{position:sticky;top:0;background:#0f172a;z-index:1}
+  tr:hover{background:rgba(255,255,255,.02)}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .toolbar .spacer{flex:1}
+  .footer{text-align:center;color:#9ca3af;font-size:12px;padding:12px}
+  .badge{display:inline-block;background:var(--accent);color:#dff5f4;padding:4px 8px;border-radius:999px;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:8px}
+  .divider{height:1px;background:var(--border);margin:8px 0}
+</style>
+</head>
+<body>
+<header class="container">
+  <h1><span class="brand">Clínica Personart</span></h1>
+  <p class="subtitle">Registre pacientes, convênios, profissionais, especialidades e origens. Os dados ficam no seu navegador. Exporte e importe backups quando quiser.</p>
+</header>
+
+<main class="container grid cols-2">
+  <section class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="pill"><span class="badge">Novo / Editar Paciente</span></div>
+      <button id="btn-visual" class="btn btn-outline btn-xs">Identidade visual</button>
+    </div>
+    <div class="divider"></div>
+
+    <form id="patient-form">
+      <input type="hidden" id="patient-id" />
+      <div class="grid cols-2">
+        <div>
+          <label for="nome">Nome do paciente *</label>
+          <input id="nome" type="text" required placeholder="Ex.: Ana Silva" />
+        </div>
+        <div>
+          <label for="nascimento">Data de nascimento</label>
+          <input id="nascimento" type="date" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <span class="muted">Faixa etária:</span>
+        <label class="radio"><input type="radio" name="faixa" value="Criança" id="faixa-crianca"> Criança</label>
+        <label class="radio"><input type="radio" name="faixa" value="Adulto" id="faixa-adulto"> Adulto</label>
+      </div>
+
+      <div id="responsavel-wrap" style="margin-top:10px; display:none;">
+        <label for="responsavel">Nome do responsável (obrigatório para criança)</label>
+        <input id="responsavel" type="text" placeholder="Ex.: Maria de Souza" />
+      </div>
+
+      <div class="grid cols-2" style="margin-top:10px">
+        <div>
+          <label for="endereco">Endereço</label>
+          <input id="endereco" type="text" placeholder="Rua, nº, bairro, cidade" />
+        </div>
+        <div>
+          <label for="contato">Contato (telefone/e-mail)</label>
+          <input id="contato" type="text" placeholder="(15) 9 9999-9999 / paciente@exemplo.com" />
+        </div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:10px">
+        <div>
+          <label for="convenio">Convênio</label>
+          <div class="row">
+            <select id="convenio" style="flex:1"></select>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-add-convenio">+ convênio</button>
+          </div>
+          <div class="muted">Lista editável.</div>
+        </div>
+
+        <div>
+          <label for="especialidade">Especialidade</label>
+          <div class="row">
+            <select id="especialidade" style="flex:1"></select>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-add-esp">+ especialidade</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <label>Profissionais que estão atendendo</label>
+        <div class="row">
+          <select id="prof-select" style="flex:1"></select>
+          <button type="button" class="btn btn-outline btn-xs" id="btn-add-prof-novo">+ profissional</button>
+          <button type="button" class="btn btn-primary btn-xs" id="btn-prof-adicionar">Adicionar</button>
+        </div>
+        <div id="pro-chips" class="chips" style="margin-top:8px"></div>
+      </div>
+
+      <div class="grid cols-2" style="margin-top:10px">
+        <div>
+          <label for="crm">CRM do médico que encaminhou</label>
+          <input id="crm" type="text" placeholder="Ex.: CRM-SP 123456" />
+        </div>
+        <div>
+          <label for="origem">Origem (como conheceu a clínica)</label>
+          <div class="row">
+            <select id="origem" style="flex:1"></select>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-add-origem">+ origem</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn-primary" type="submit">Salvar paciente</button>
+        <button class="btn btn-outline" type="button" id="btn-limpar">Limpar formulário</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="row" style="align-items:center;justify-content:space-between">
+      <div class="pill"><span class="badge">Pacientes</span></div>
+      <button class="btn btn-danger btn-xs" id="btn-zerar" title="Apagar todos os pacientes">Limpar dados</button>
+    </div>
+    <div class="divider"></div>
+
+    <div class="toolbar">
+      <input id="busca" type="text" placeholder="Buscar por nome, responsável, contato, CRM ou origem" style="min-width:240px" />
+      <select id="filtro-convenio"><option value="">Todos os convênios</option></select>
+      <select id="filtro-profissional"><option value="">Todos os profissionais</option></select>
+      <select id="filtro-faixa">
+        <option value="">Todas as faixas</option>
+        <option value="Criança">Criança</option>
+        <option value="Adulto">Adulto</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-outline" id="btn-ver">Ver todos</button>
+      <button class="btn btn-outline" id="btn-exportar">Baixar backup (.json)</button>
+      <label class="btn btn-outline" for="importar" style="cursor:pointer">Importar backup</label>
+      <input id="importar" type="file" accept="application/json" style="display:none" />
+    </div>
+
+    <div id="wrap-tabela" style="display:none; overflow:auto; max-height:55vh; border:1px solid var(--border); border-radius:12px;">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th style="min-width:180px">Paciente</th>
+            <th>Nasc.</th>
+            <th>Faixa</th>
+            <th>Responsável</th>
+            <th>Endereço</th>
+            <th>Contato</th>
+            <th>Convênio</th>
+            <th>Especialidade</th>
+            <th>Profissionais</th>
+            <th>CRM</th>
+            <th>Origem</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="muted" id="contador" style="margin-top:8px">0 pacientes</div>
+  </section>
+</main>
+
+<footer class="footer">LGPD: mantenha backups seguros. Os dados ficam apenas neste navegador, a menos que você exporte/importe.</footer>
+
+<script>
+  const $ = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+
+  const STORAGE_KEYS = {
+    PAC:'personart.pacientes.v7',
+    CONV:'personart.convenios.v7',
+    PROS:'personart.profissionais.v7',
+    ESP:'personart.especialidades.v7',
+    ORIG:'personart.origens.v7'
+  };
+
+  const DEFAULT_CONV = ['Funserv','Danamed','Gama Saúde','Fusex','BlueSaúde','Unimed Campinas','Ossel','Ofebas'];
+  const DEFAULT_PROS = ['Bruno Alexandre','Janaina Davi','Stephanie Magon','Soraia Souza','Simone Agrela','Maria Pedroso'];
+  const DEFAULT_ESP = ['Psicologia','Fonoaudiologia','Terapia Ocupacional','Nutrição'];
+  const DEFAULT_ORIG = ['Indicação','Google','Instagram','Site','Google Maps','Outro'];
+
+  const loadJSON = (k,f)=>{ try{ return JSON.parse(localStorage.getItem(k)) ?? f }catch{return f} };
+  const saveJSON = (k,v)=> localStorage.setItem(k, JSON.stringify(v));
+  const uid = ()=> Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+  const formatDateBR = (iso)=>{
+    if(!iso) return '';
+    const d = new Date(iso+'T00:00:00'); // evita fuso
+    if(Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  };
+
+  let pacientes = loadJSON(STORAGE_KEYS.PAC, []);
+  let convenios = loadJSON(STORAGE_KEYS.CONV, DEFAULT_CONV);
+  let profissionais = loadJSON(STORAGE_KEYS.PROS, DEFAULT_PROS);
+  let especialidades = loadJSON(STORAGE_KEYS.ESP, DEFAULT_ESP);
+  let origens = loadJSON(STORAGE_KEYS.ORIG, DEFAULT_ORIG);
+
+  function ensureDefaults(){
+    if(!Array.isArray(convenios) || convenios.length===0) convenios = DEFAULT_CONV.slice();
+    if(!Array.isArray(profissionais) || profissionais.length===0) profissionais = DEFAULT_PROS.slice();
+    if(!Array.isArray(especialidades) || especialidades.length===0) especialidades = DEFAULT_ESP.slice();
+    if(!Array.isArray(origens) || origens.length===0) origens = DEFAULT_ORIG.slice();
+    convenios.sort((a,b)=>a
