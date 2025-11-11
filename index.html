@@ -482,8 +482,9 @@
       try {
         let url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
         if (!url) {
-          console.log('Endpoint não configurado. Backup automático não será realizado.');
-          return;
+          // Pré-configurar a URL do Apps Script automaticamente
+          url = 'https://script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec';
+          saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url);
         }
         
         const pass = 'personart-auto-backup-' + new Date().toISOString().split('T')[0];
