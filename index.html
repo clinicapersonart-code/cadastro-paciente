@@ -480,11 +480,11 @@
     }
 
     function normalizeAppsScriptUrl(url){
-      if(!url) return '';
-      url = url.replace(/\/u\/\d+\//, '/'); // remove /u/2/
-      if(url.endsWith('/dev')) url = url.slice(0,-4)+'exec';
-      return url.trim();
-    }
+  if(!url) return '';
+  url = url.replace(/\/u\/\d+\//, '/'); // remove /u/2/
+  if(url.endsWith('/dev')) url = url.slice(0,-4)+'exec'; // troca dev -> exec
+  return url.trim();
+}
 
     async function ensureCloudSecrets(){
       let url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
@@ -507,12 +507,17 @@
     }
 
     async function syncToCloud(encryptedPkg){
-      const url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
-      if(!url) throw new Error('Endpoint não configurado');
-      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(encryptedPkg) });
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      try { return await res.json(); } catch { return {}; }
-    }
+  let url = localStorage.getItem('personart.cloud.endpoint') || '';
+  url = normalizeAppsScriptUrl(url);
+  if(!url) throw new Error('Endpoint não configurado');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(encryptedPkg)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  try { return await res.json(); } catch { return {}; }
+}
 
     async function autoCloudBackup(){
       const { pass } = await ensureCloudSecrets();
