@@ -474,15 +474,25 @@
     });
 
     function showNotification(msg){
-      const el = document.getElementById('sync-status');
-      if(!el) return;
-      el.textContent = msg;
-    }
+  const el = document.getElementById('sync-status');
+  if(el) el.textContent = msg;
+}
+
+async function readJsonSafe(res){
+  // tenta JSON; se não der, lê texto e devolve “embrulhado”
+  try { return await res.json(); }
+  catch(_){
+    try { 
+      const txt = await res.text();
+      return { ok:false, raw: txt.slice(0,200) }; 
+    } catch { return { ok:false, raw: '(sem corpo)' }; }
+  }
+}
 
     function normalizeAppsScriptUrl(url){
   if(!url) return '';
-  url = url.replace(/\/u\/\d+\//, '/'); // remove /u/2/
-  if(url.endsWith('/dev')) url = url.slice(0,-4)+'exec'; // troca dev -> exec
+  url = url.replace(/\/u\/\d+\//, '/');
+  if(url.endsWith('/dev')) url = url.slice(0,-4)+'exec';
   return url.trim();
 }
 
@@ -506,28 +516,51 @@
       return { url, pass };
     }
 
-    async function syncToCloud(encryptedPkg){
+async function syncToCloud(encryptedPkg){
   let url = localStorage.getItem('personart.cloud.endpoint') || '';
   url = normalizeAppsScriptUrl(url);
   if(!url) throw new Error('Endpoint não configurado');
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
     body: JSON.stringify(encryptedPkg)
   });
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  try { return await res.json(); } catch { return {}; }
+
+  const data = await readJsonSafe(res);
+  if(!res.ok || data.ok === false){
+    const msg = data && (data.error || data.raw) ? String(data.error || data.raw) : ('HTTP '+res.status);
+    throw new Error(msg);
+  }
+  return data;
 }
 
-    async function autoCloudBackup(){
-      const { pass } = await ensureCloudSecrets();
-      const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
-      const encrypted = await encryptJSON(payload, pass);
-      const result = await syncToCloud(encrypted);
-      const msg = '✓ Paciente salvo e backup na nuvem às ' + nowTime() + (result && result.name ? (' ('+result.name+')') : '');
-      showNotification(msg);
-      return msg;
-    }
+async function autoCloudBackup(){
+  // garante endpoint e senha
+  let url = localStorage.getItem('personart.cloud.endpoint') || '';
+  url = normalizeAppsScriptUrl(url);
+  if(!url){
+    url = prompt('Cole a URL do Apps Script (/exec):') || '';
+    url = normalizeAppsScriptUrl(url);
+    if(!url) throw new Error('Endpoint não informado');
+    localStorage.setItem('personart.cloud.endpoint', url);
+  }
+  let pass = localStorage.getItem('personart.cloud.pass') || '';
+  if(!pass){
+    pass = prompt('Defina a senha de criptografia:') || '';
+    if(!pass) throw new Error('Senha não informada');
+    localStorage.setItem('personart.cloud.pass', pass);
+  }
+
+  const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
+  const encrypted = await encryptJSON(payload, pass);
+  const result = await syncToCloud(encrypted);
+
+  const name = (result && (result.name || result.id)) ? (' ('+(result.name || result.id)+')') : '';
+  const msg = '✓ Paciente salvo e backup na nuvem ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) + name;
+  showNotification(msg);
+  return msg;
+}
 
     document.getElementById('btn-endpoint').addEventListener('click', async ()=>{
       const atual = getStr(STORAGE_KEYS.CLOUD_ENDPOINT, '');
@@ -540,39 +573,43 @@
       if(pass!==null && pass!==''){ saveStr(STORAGE_KEYS.CLOUD_PASS, pass); alert('Senha salva.'); }
     });
 
-    document.getElementById('btn-sync').addEventListener('click', async ()=>{
-      try{
-        await ensureCloudSecrets();
-        const pass = getStr(STORAGE_KEYS.CLOUD_PASS);
-        const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
-        const encrypted = await encryptJSON(payload, pass);
-        const result = await syncToCloud(encrypted);
-        const msg = 'Backup enviado para a nuvem.' + (result && result.name ? (' Arquivo: '+result.name) : '');
-        showNotification(msg);
-        alert(msg);
-      }catch(err){ alert('Erro ao sincronizar: '+err.message); }
-    });
+   document.getElementById('btn-sync').addEventListener('click', async ()=>{
+  try{
+    const msg = await autoCloudBackup();
+    alert('Backup enviado. ' + msg);
+  }catch(err){
+    showNotification('Erro ao sincronizar: '+String(err.message || err));
+    alert('Erro ao sincronizar: '+String(err.message || err));
+  }
+});
 
-    document.getElementById('patient-form').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const currentId=$('#patient-id').value;
-      const id=currentId || uid();
-      const data=getFormData();
-      const err=validateForm(data); if(err){alert(err);return;}
-      const idx=pacientes.findIndex(p=>p.id===currentId);
-      const rec={id,...data};
-      if(idx>=0) pacientes[idx]=rec; else pacientes.push(rec);
-      saveJSON(STORAGE_KEYS.PACIENTES,pacientes);
-      try{
-        const msg = await autoCloudBackup();
-        alert('Paciente salvo. ' + msg);
-      }catch(err){
-        showNotification('Falha ao salvar na nuvem: '+err.message);
-        alert('Paciente salvo. Erro ao enviar à nuvem: '+err.message);
-      }
-      clearForm();
-      renderTable();
-    });
+document.getElementById('patient-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const btn = e.submitter || document.querySelector('#patient-form [type="submit"]');
+  if(btn){ btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try{
+    const currentId = document.getElementById('patient-id').value;
+    const id = currentId || uid();
+    const data = getFormData();
+    const err = validateForm(data); if(err) throw new Error(err);
+
+    const idx = pacientes.findIndex(p=>p.id===currentId);
+    const rec = { id, ...data };
+    if(idx>=0) pacientes[idx]=rec; else pacientes.push(rec);
+    saveJSON(STORAGE_KEYS.PACIENTES, pacientes);
+
+    const msg = await autoCloudBackup(); // usa o MESMO caminho do botão “nuvem”
+    alert('Paciente salvo. ' + msg);
+
+    clearForm();
+    renderTable();
+  } catch(err){
+    showNotification('Falha ao salvar na nuvem: ' + String(err.message || err));
+    alert('Paciente salvo localmente. Erro ao enviar à nuvem: ' + String(err.message || err));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Salvar paciente'; }
+  }
+});
 
     $('#btn-limpar').addEventListener('click',clearForm);
 
