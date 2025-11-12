@@ -54,8 +54,7 @@
     dialog .row{align-items:stretch}
     dialog input[type="color"]{width:100%;height:40px;background:transparent;border:1px solid var(--border);border-radius:8px;padding:0}
     dialog .actions{justify-content:flex-end}
-    .notification{position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:16px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:9999;animation:slideIn 0.3s ease-out}
-    @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+    #sync-status{min-height:18px}
   </style>
 </head>
 <body>
@@ -191,17 +190,20 @@
         <button class="btn btn-outline" id="btn-backup-enc">Backup criptografado (.enc.json)</button>
         <label class="btn btn-outline" for="importar" style="cursor:pointer">Importar backup</label>
         <input id="importar" type="file" accept="application/json" style="display:none" />
+        <button class="btn btn-outline" id="btn-endpoint">Configurar nuvem</button>
         <button class="btn btn-outline" id="btn-sync">Sincronizar com a nuvem</button>
         <button class="btn btn-danger btn-sm" id="btn-zerar" title="Apagar todos os pacientes">Limpar dados</button>
       </div>
 
-      <div id="lista-aviso" class="muted">A lista está oculta. Clique em "Ver todos" ou use a busca/filtros.</div>
+      <div id="sync-status" class="muted"></div>
+
+      <div id="lista-aviso" class="muted">A lista está oculta. Clique em “Ver todos” ou use a busca/filtros.</div>
 
       <div id="table-wrap" class="hidden" style="overflow:auto;max-height:55vh;border:1px solid var(--border);border-radius:12px;">
         <table id="tabela">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th style="min-width:180px">Paciente</th>
               <th>Nasc.</th>
               <th>Faixa</th>
               <th>Responsável</th>
@@ -222,7 +224,9 @@
     </section>
   </main>
 
-  <footer class="footer">Desenvolvido para Clínica Personart | LGPD: backups podem conter dados sensíveis. Use criptografia para enviar/armazenar.</footer>
+  <footer class="footer">
+    Desenvolvido para <strong>Clínica Personart</strong> · LGPD: backups contêm dados sensíveis e são criptografados antes do envio.
+  </footer>
 
   <dialog id="brand-dialog">
     <form method="dialog">
@@ -258,7 +262,8 @@
       PROFISSIONAIS:'personart.profissionais.v1',
       ESPECIALIDADES:'personart.especialidades.v1',
       BRAND:'personart.brand.v1',
-      CLOUD_ENDPOINT:'personart.cloud.endpoint'
+      CLOUD_ENDPOINT:'personart.cloud.endpoint',
+      CLOUD_PASS:'personart.cloud.pass'
     };
 
     const DEFAULT_CONVENIOS = ['Funserv','Danamed','Gama Saúde','Fusex','BlueSaúde','Unimed Campinas','Ossel','Ofebas'];
@@ -273,6 +278,7 @@
     const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36)
     const parseISODate=(iso)=>{if(!iso||!/^\d{4}-\d{2}-\d{2}$/.test(iso))return null;const [y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d);}
     const formatShort=(iso)=>{const d=parseISODate(iso);if(!d)return'';const dd=String(d.getDate()).padStart(2,'0');const mm=String(d.getMonth()+1).padStart(2,'0');const yy=String(d.getFullYear()).slice(-2);return `${dd}/${mm}/${yy}`;}
+    const nowTime=()=>new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
     let pacientes=loadJSON(STORAGE_KEYS.PACIENTES,[])
     let convenios=loadJSON(STORAGE_KEYS.CONVENIOS,DEFAULT_CONVENIOS)
@@ -284,7 +290,7 @@
     let selectedEspecialidades=[]
     let listVisible=false
 
-    function base64FromBytes(bytes){let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin);}
+    function base64FromBytes(bytes){let bin=''; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]); return btoa(bin);}
     function bytesFromBase64(b64){const bin=atob(b64); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out;}
 
     async function deriveKey(password, salt){
@@ -305,7 +311,7 @@
       const key=await deriveKey(password,salt);
       const data=enc.encode(JSON.stringify(obj));
       const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, data);
-      return {format:'personart-aesgcm-v1', iv:base64FromBytes(new Uint8Array(iv)), salt:base64FromBytes(new Uint8Array(salt)), ct:base64FromBytes(new Uint8Array(ct))};
+      return {format:'personart-aesgcm-v1', iv:base64FromBytes(iv), salt:base64FromBytes(salt), ct:base64FromBytes(new Uint8Array(ct))};
     }
     async function decryptJSON(pkg, password){
       if(!(pkg && pkg.format==='personart-aesgcm-v1')) throw new Error('Arquivo não reconhecido');
@@ -316,17 +322,6 @@
       const ct=bytesFromBase64(pkg.ct);
       const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, ct);
       return JSON.parse(dec.decode(pt));
-    }
-
-    function showNotification(message) {
-      const notification = document.createElement('div');
-      notification.className = 'notification';
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        notification.style.animation = 'slideIn 0.3s ease-out reverse';
-        setTimeout(() => notification.remove(), 300);
-      }, 3000);
     }
 
     function applyBrand(){
@@ -341,7 +336,7 @@
       const sel=$('#convenio'); sel.innerHTML=''; for(const c of convenios){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);}
       const filtro=$('#filtro-convenio'); const current=filtro.value;
       filtro.innerHTML='<option value="">Todos os convênios</option>'+convenios.map(c=>`<option value="${c}">${c}</option>`).join('');
-      if([...filtro.options].some(o=>o.value===current)) filtro.value=current; else filtro.value='';
+      if(Array.from(filtro.options).some(o=>o.value===current)) filtro.value=current; else filtro.value='';
       if(sel.options.length>0) sel.selectedIndex=0;
     }
 
@@ -350,7 +345,7 @@
       profissionais.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sel.appendChild(o);});
       const filtro=$('#filtro-profissional'); const current=filtro.value;
       filtro.innerHTML='<option value="">Todos os profissionais</option>'+profissionais.map(p=>`<option value="${p}">${p}</option>`).join('');
-      if([...filtro.options].some(o=>o.value===current)) filtro.value=current; else filtro.value='';
+      if(Array.from(filtro.options).some(o=>o.value===current)) filtro.value=current; else filtro.value='';
     }
 
     function renderEspecialidadesSelect(){
@@ -478,46 +473,98 @@
       $('#nova-especialidade').value='';
     });
 
-    async function autoBackupToCloud(pacientesData) {
-      try {
-        let url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
-        if (!url) {
-          // Pré-configurar a URL do Apps Script automaticamente
-          url = 'https://script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec';
-          saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url);
-        }
-        
-        const pass = 'personart-auto-backup-' + new Date().toISOString().split('T')[0];
-        const payload = {pacientes: pacientesData, convenios, profissionais, especialidades, ts: new Date().toISOString()};
-        const encrypted = await encryptJSON(payload, pass);
-        
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({...encrypted, auto: true})
-        });
-        
-        if (res.ok) {
-          showNotification('✓ Paciente salvo e backup realizado na nuvem!');
-        }
-      } catch (err) {
-        console.error('Erro ao fazer backup automático:', err);
-      }
+    function showNotification(msg){
+      const el = document.getElementById('sync-status');
+      if(!el) return;
+      el.textContent = msg;
     }
 
-    $('#patient-form').addEventListener('submit', async (e)=>{
+    function normalizeAppsScriptUrl(url){
+      if(!url) return '';
+      url = url.replace(/\/u\/\d+\//, '/'); // remove /u/2/
+      if(url.endsWith('/dev')) url = url.slice(0,-4)+'exec';
+      return url.trim();
+    }
+
+    async function ensureCloudSecrets(){
+      let url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
+      if(!url){
+        url = prompt('Cole a URL do seu Apps Script (termina com /exec):') || '';
+        url = normalizeAppsScriptUrl(url);
+        if(!url) throw new Error('Endpoint não informado');
+        saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url);
+      } else {
+        const fixed = normalizeAppsScriptUrl(url);
+        if(fixed !== url){ url = fixed; saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url); }
+      }
+      let pass = getStr(STORAGE_KEYS.CLOUD_PASS);
+      if(!pass){
+        pass = prompt('Defina a senha de criptografia (será salva neste navegador):');
+        if(!pass) throw new Error('Senha não informada');
+        saveStr(STORAGE_KEYS.CLOUD_PASS, pass);
+      }
+      return { url, pass };
+    }
+
+    async function syncToCloud(encryptedPkg){
+      const url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
+      if(!url) throw new Error('Endpoint não configurado');
+      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(encryptedPkg) });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      try { return await res.json(); } catch { return {}; }
+    }
+
+    async function autoCloudBackup(){
+      const { pass } = await ensureCloudSecrets();
+      const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
+      const encrypted = await encryptJSON(payload, pass);
+      const result = await syncToCloud(encrypted);
+      const msg = '✓ Paciente salvo e backup na nuvem às ' + nowTime() + (result && result.name ? (' ('+result.name+')') : '');
+      showNotification(msg);
+      return msg;
+    }
+
+    document.getElementById('btn-endpoint').addEventListener('click', async ()=>{
+      const atual = getStr(STORAGE_KEYS.CLOUD_ENDPOINT, '');
+      let url = prompt('Cole a URL do seu Apps Script (/exec). O atual é:\n' + (atual || '(nenhum)'), atual || '');
+      if(url===null) return;
+      url = normalizeAppsScriptUrl(url || '');
+      if(url){ saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url); alert('Endpoint salvo:\n'+url); }
+      let pass = getStr(STORAGE_KEYS.CLOUD_PASS, '');
+      pass = prompt('Senha de criptografia (será salva neste navegador):', pass || '');
+      if(pass!==null && pass!==''){ saveStr(STORAGE_KEYS.CLOUD_PASS, pass); alert('Senha salva.'); }
+    });
+
+    document.getElementById('btn-sync').addEventListener('click', async ()=>{
+      try{
+        await ensureCloudSecrets();
+        const pass = getStr(STORAGE_KEYS.CLOUD_PASS);
+        const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
+        const encrypted = await encryptJSON(payload, pass);
+        const result = await syncToCloud(encrypted);
+        const msg = 'Backup enviado para a nuvem.' + (result && result.name ? (' Arquivo: '+result.name) : '');
+        showNotification(msg);
+        alert(msg);
+      }catch(err){ alert('Erro ao sincronizar: '+err.message); }
+    });
+
+    document.getElementById('patient-form').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const id=$('#patient-id').value||uid();
+      const currentId=$('#patient-id').value;
+      const id=currentId || uid();
       const data=getFormData();
       const err=validateForm(data); if(err){alert(err);return;}
-      const idx=pacientes.findIndex(p=>p.id===$('#patient-id').value);
+      const idx=pacientes.findIndex(p=>p.id===currentId);
       const rec={id,...data};
       if(idx>=0) pacientes[idx]=rec; else pacientes.push(rec);
       saveJSON(STORAGE_KEYS.PACIENTES,pacientes);
-      
-      // Backup automático para a nuvem
-      await autoBackupToCloud(pacientes);
-      
+      try{
+        const msg = await autoCloudBackup();
+        alert('Paciente salvo. ' + msg);
+      }catch(err){
+        showNotification('Falha ao salvar na nuvem: '+err.message);
+        alert('Paciente salvo. Erro ao enviar à nuvem: '+err.message);
+      }
       clearForm();
       renderTable();
     });
@@ -605,11 +652,10 @@
       URL.revokeObjectURL(url);
     }
 
-    $('#btn-exportar').addEventListener('click',()=>{download('pacientes_personart.csv',toCSV(pacientes),'text/csv;charset=utf-8');});
-
-    $('#btn-backup-enc').addEventListener('click', async ()=>{
-      const pass = prompt('Defina a senha do backup criptografado (guarde bem!)');
-      if(!pass) return;
+    document.getElementById('btn-exportar').addEventListener('click',()=>{download('pacientes_personart.csv',toCSV(pacientes),'text/csv;charset=utf-8');});
+    document.getElementById('btn-backup-enc').addEventListener('click', async ()=>{
+      let pass = getStr(STORAGE_KEYS.CLOUD_PASS);
+      if(!pass){ pass = prompt('Defina a senha do backup criptografado (será salva neste navegador)'); if(!pass) return; saveStr(STORAGE_KEYS.CLOUD_PASS, pass); }
       try {
         const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
         const pkg = await encryptJSON(payload, pass);
@@ -619,16 +665,18 @@
       }
     });
 
-    $('#importar').addEventListener('change',async(ev)=>{
-      const file=ev.target.files?.[0]; if(!file) return;
+    document.getElementById('importar').addEventListener('change',async(ev)=>{
+      const input = ev.target;
+      const file = (input && input.files && input.files[0]) ? input.files[0] : null;
+      if(!file) return;
       try{
         const text=await file.text();
         let data;
         try {
           const pkg = JSON.parse(text);
           if (pkg && pkg.format === 'personart-aesgcm-v1') {
-            const pass = prompt('Arquivo criptografado. Digite a senha:');
-            if(!pass) throw new Error('Senha não informada');
+            let pass = getStr(STORAGE_KEYS.CLOUD_PASS);
+            if(!pass){ pass = prompt('Arquivo criptografado. Digite a senha:'); if(!pass) throw new Error('Senha não informada'); saveStr(STORAGE_KEYS.CLOUD_PASS, pass); }
             data = await decryptJSON(pkg, pass);
           } else {
             data = pkg;
@@ -645,32 +693,8 @@
         renderConvenios(); renderProfissionaisSelect(); renderEspecialidadesSelect(); renderTable();
         alert('Backup importado com sucesso.');
       }catch(err){alert('Falha ao importar: '+err.message);}
-      finally{ev.target.value='';}
+      finally{ if(input) input.value=''; }
     });
-
-    async function syncToCloud(encryptedPkg){
-      let url = getStr(STORAGE_KEYS.CLOUD_ENDPOINT);
-      if(!url){
-        url = prompt('Cole a URL do seu Apps Script (endpoint):');
-        if(!url) throw new Error('Endpoint não informado');
-        saveStr(STORAGE_KEYS.CLOUD_ENDPOINT, url);
-      }
-      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(encryptedPkg) });
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      try { return await res.json(); } catch { return {}; }
-    }
-    document.getElementById('btn-sync').addEventListener('click', async ()=>{
-      try{
-        const pass = prompt('Senha para criptografar antes de enviar ao Drive:');
-        if(!pass) return;
-        const payload = {pacientes,convenios,profissionais,especialidades,ts:new Date().toISOString()};
-        const encrypted = await encryptJSON(payload, pass);
-        const result = await syncToCloud(encrypted);
-        alert('Backup enviado para a nuvem.' + (result && result.name ? (' Arquivo: '+result.name) : ''));
-      }catch(err){ alert('Erro ao sincronizar: '+err.message); }
-    });
-
-    $('#btn-zerar').addEventListener('click',()=>{if(!confirm('Tem certeza que deseja apagar TODO o banco local?')) return; pacientes=[]; saveJSON(STORAGE_KEYS.PACIENTES,pacientes); renderTable();});
 
     const brandDialog=$('#brand-dialog');
     $('#btn-brand').addEventListener('click',()=>{brandDialog.showModal();});
@@ -679,7 +703,8 @@
       e.preventDefault();
       const color=$('#brand-color').value || brand.color;
       const dark=$('#brand-dark').value || brand.dark;
-      const file=$('#brand-logo-input').files[0];
+      const fileInput=$('#brand-logo-input');
+      const file=(fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
       let logoData=brand.logo;
       if(file){
         logoData=await new Promise((res,rej)=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file);});
