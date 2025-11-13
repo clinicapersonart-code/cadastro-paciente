@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ficha de Cadastro – Clínica Personart</title>
+<style>
+  :root{--bg:#0b1220;--card:#111827;--text:#f8fafc;--muted:#94a3b8;--brand:#F2C8A0;--border:#334155}
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px}
+  .card{background:#0f172a;border:1px solid var(--border);border-radius:14px;padding:16px}
+  h1{margin:0 0 6px;color:var(--brand)} p.sub{color:var(--muted);margin:0 0 16px}
+  label{display:block;font-size:14px;color:#cbd5e1;margin:10px 0 6px}
+  input,select,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text);outline:none}
+  .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+  @media(max-width:720px){.row{grid-template-columns:1fr}}
+  .muted{color:var(--muted);font-size:12px}
+  .ok{color:#16a34a}.err{color:#ef4444}
+  button.btn{background:var(--brand);color:#111;border:0;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Ficha de Cadastro</h1>
+    <p class="sub">Preencha seus dados para agilizar seu atendimento na <strong>Clínica Personart</strong>.</p>
+    <form id="f">
+      <label>Nome completo *</label>
+      <input id="nome" required placeholder="Ex.: Ana Silva"/>
+
+      <div class="row">
+        <div>
+          <label>Data de nascimento *</label>
+          <input id="nasc" type="date" required/>
+        </div>
+        <div>
+          <label>Faixa etária</label>
+          <select id="faixa">
+            <option value="">Selecione…</option>
+            <option value="Criança">Criança</option>
+            <option value="Adulto">Adulto</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="resp-wrap" style="display:none">
+        <label>Responsável (se criança)</label>
+        <input id="responsavel" placeholder="Ex.: Maria de Souza"/>
+      </div>
+
+      <label>Contato (telefone/e-mail) *</label>
+      <input id="contato" required placeholder="(15) 9 9999-9999 / paciente@exemplo.com"/>
+
+      <label>Convênio (opcional)</label>
+      <input id="convenio" placeholder="Ex.: Funserv"/>
+
+      <label>Motivo/Observações (opcional)</label>
+      <textarea id="obs" rows="4" placeholder="Conte brevemente seu objetivo de atendimento"></textarea>
+
+      <label><input type="checkbox" id="cons" required style="width:auto;vertical-align:middle;margin-right:8px"/> Li e concordo com o uso dos dados para agendamento e contato (LGPD).</label>
+
+      <button class="btn" type="submit">Enviar</button>
+      <div id="msg" class="muted" style="margin-top:10px"></div>
+    </form>
+  </div>
+  <p class="muted" style="text-align:center;margin-top:12px">Desenvolvido para Clínica Personart.</p>
+</div>
+
+<script>
+const ENDPOINT = 'PASTE_YOUR_EXEC_URL_HERE';
+
+function normalize(url){
+  return (url||'').replace(/\/u\/\d+\//,'/').replace(/\/dev$/,'/exec').trim();
+}
+function ageFrom(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr); if(isNaN(d)) return null;
+  const t = new Date(); let a = t.getFullYear()-d.getFullYear();
+  const m = t.getMonth()-d.getMonth();
+  if(m<0 || (m===0 && t.getDate()<d.getDate())) a--;
+  return a;
+}
+const f = document.getElementById('f');
+const faixa = document.getElementById('faixa');
+const nasc = document.getElementById('nasc');
+const respWrap = document.getElementById('resp-wrap');
+nasc.addEventListener('change', ()=>{
+  const a = ageFrom(nasc.value);
+  faixa.value = (a!=null && a<18) ? 'Criança' : (a!=null ? 'Adulto' : '');
+  respWrap.style.display = (faixa.value==='Criança') ? '' : 'none';
+});
+faixa.addEventListener('change', ()=>{
+  respWrap.style.display = (faixa.value==='Criança') ? '' : 'none';
+});
+f.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const msg = document.getElementById('msg');
+  msg.textContent = 'Enviando…';
+  try{
+    const payload = {
+      kind: 'intake',
+      nome: document.getElementById('nome').value.trim(),
+      nascimento: nasc.value || '',
+      faixa: faixa.value || '',
+      responsavel: (faixa.value==='Criança') ? (document.getElementById('responsavel').value.trim()) : '',
+      contato: document.getElementById('contato').value.trim(),
+      convenio: document.getElementById('convenio').value.trim(),
+      observacoes: document.getElementById('obs').value.trim(),
+      consent: document.getElementById('cons').checked,
+      ts: new Date().toISOString()
+    };
+    if(!payload.nome || !payload.nascimento || !payload.contato || !payload.consent){
+      throw new Error('Preencha os campos obrigatórios.');
+    }
+    const res = await fetch(normalize(ENDPOINT), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload)
+    });
+    const data = await (async()=>{ try{return await res.json();}catch(_){return {ok:false};}})();
+    if(!res.ok || data.ok===false) throw new Error((data && data.error) ? data.error : ('HTTP '+res.status));
+    msg.className = 'muted ok';
+    msg.textContent = 'Recebido! Entraremos em contato.';
+    f.reset(); respWrap.style.display='none'; faixa.value='';
+  }catch(err){
+    msg.className = 'muted err';
+    msg.textContent = 'Falha ao enviar: ' + String(err.message || err);
+  }
+});
+</script>
+</body>
+</html>
