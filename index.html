@@ -119,6 +119,10 @@
               <button class="btn btn-outline" type="button" id="btn-add-convenio">+ convênio</button>
             </div>
             <div class="hint">Lista editável. Adicione novos convênios quando precisar.</div>
+            <div style="margin-top:10px">
+              <label for="carteirinha">Número da carteirinha</label>
+              <input id="carteirinha" type="text" placeholder="Ex.: 123456789" />
+            </div>
           </div>
 
           <div>
@@ -132,6 +136,11 @@
               <button class="btn btn-outline" type="button" id="btn-add-profissional">+ profissional</button>
             </div>
             <div id="pro-preview" class="chips" style="margin-top:6px"></div>
+            <div class="row" style="margin-top:10px">
+              <span class="muted">Tipo de atendimento:</span>
+              <label class="radio"><input type="radio" name="tipo-atendimento" value="Convencional" id="tipo-convencional" /> Convencional</label>
+              <label class="radio"><input type="radio" name="tipo-atendimento" value="ABA" id="tipo-aba" /> ABA</label>
+            </div>
           </div>
         </div>
 
@@ -176,7 +185,7 @@
     <section class="card">
       <div class="section-title">Pacientes</div>
       <div class="toolbar">
-        <input id="busca" type="text" placeholder="Buscar por nome, responsável, contato, CRM ou origem" style="min-width:240px" />
+        <input id="busca" type="text" placeholder="Buscar por nome, responsável, contato, CRM, origem, carteirinha ou tipo" style="min-width:240px" />
         <select id="filtro-convenio"><option value="">Todos os convênios</option></select>
         <select id="filtro-profissional"><option value="">Todos os profissionais</option></select>
         <select id="filtro-faixa">
@@ -210,6 +219,8 @@
               <th>Endereço</th>
               <th>Contato</th>
               <th>Convênio</th>
+              <th>Carteirinha</th>
+              <th>Tipo</th>
               <th style="min-width:180px">Profissionais</th>
               <th style="min-width:160px">Especialidades</th>
               <th>CRM</th>
@@ -394,6 +405,8 @@
       $('#responsavel').value=''; $('#responsavel-wrap').style.display='none';
       $('#endereco').value=''; $('#contato').value='';
       $('#convenio').selectedIndex=0;
+      $('#carteirinha').value='';
+      $('#tipo-convencional').checked=false; $('#tipo-aba').checked=false;
       $('#crm').value=''; $('#origem').value='';
       selectedProfessionals=[]; selectedEspecialidades=[];
       updateProPreview(); updateEspPreview();
@@ -410,6 +423,9 @@
       $('#endereco').value=p.endereco||'';
       $('#contato').value=p.contato||'';
       $('#convenio').value=p.convenio||'';
+      $('#carteirinha').value=p.carteirinha||'';
+      $('#tipo-convencional').checked=p.tipoAtendimento==='Convencional';
+      $('#tipo-aba').checked=p.tipoAtendimento==='ABA';
       $('#crm').value=p.crm||'';
       $('#origem').value=p.origem||'';
       selectedProfessionals=Array.isArray(p.profissionais)?p.profissionais.slice():[];
@@ -426,10 +442,13 @@
       const endereco=$('#endereco').value.trim();
       const contato=$('#contato').value.trim();
       const convenio=$('#convenio').value||'';
+      const carteirinha=$('#carteirinha').value.trim();
+      const tipoAtendimento=$('#tipo-convencional').checked?'Convencional':($('#tipo-aba').checked?'ABA':'');
       const crm=$('#crm').value.trim();
       const origem=$('#origem').value.trim();
       return {
         nome, nascimento, faixa, responsavel, endereco, contato, convenio,
+        carteirinha, tipoAtendimento,
         profissionais:selectedProfessionals.slice(),
         especialidades:selectedEspecialidades.slice(),
         crm, origem
@@ -631,7 +650,7 @@ document.getElementById('patient-form').addEventListener('submit', async (e)=>{
       if(!show){$('#contador').textContent=''; return;}
 
       const filtered=pacientes.filter(p=>{
-        const blob=[p.nome,p.responsavel,p.contato,p.crm,p.origem].filter(Boolean).join(' ').toLowerCase();
+        const blob=[p.nome,p.responsavel,p.contato,p.crm,p.origem,p.carteirinha,p.tipoAtendimento].filter(Boolean).join(' ').toLowerCase();
         if(q && !blob.includes(q)) return false;
         if(fConv && p.convenio!==fConv) return false;
         if(fFaixa && p.faixa!==fFaixa) return false;
@@ -648,6 +667,8 @@ document.getElementById('patient-form').addEventListener('submit', async (e)=>{
         const tdEnd=document.createElement('td'); tdEnd.textContent=p.endereco||'';
         const tdContato=document.createElement('td'); tdContato.textContent=p.contato||'';
         const tdConv=document.createElement('td'); tdConv.textContent=p.convenio||'';
+        const tdCart=document.createElement('td'); tdCart.textContent=p.carteirinha||'';
+        const tdTipo=document.createElement('td'); tdTipo.textContent=p.tipoAtendimento||'';
         const tdPro=document.createElement('td'); (p.profissionais||[]).forEach(x=>{const s=document.createElement('span'); s.className='chip'; s.textContent=x; tdPro.appendChild(s); tdPro.appendChild(document.createTextNode(' '));});
         const tdEsp=document.createElement('td'); (p.especialidades||[]).forEach(x=>{const s=document.createElement('span'); s.className='chip'; s.textContent=x; tdEsp.appendChild(s); tdEsp.appendChild(document.createTextNode(' '));});
         const tdCRM=document.createElement('td'); tdCRM.textContent=p.crm||'';
@@ -656,7 +677,7 @@ document.getElementById('patient-form').addEventListener('submit', async (e)=>{
         const btnE=document.createElement('button'); btnE.className='btn btn-outline'; btnE.dataset.acao='editar'; btnE.dataset.id=p.id; btnE.textContent='Editar';
         const btnX=document.createElement('button'); btnX.className='btn btn-danger'; btnX.dataset.acao='excluir'; btnX.dataset.id=p.id; btnX.textContent='Excluir';
         tdAcoes.appendChild(btnE); tdAcoes.appendChild(btnX);
-        tr.appendChild(tdNome); tr.appendChild(tdNasc); tr.appendChild(tdFaixa); tr.appendChild(tdResp); tr.appendChild(tdEnd); tr.appendChild(tdContato); tr.appendChild(tdConv); tr.appendChild(tdPro); tr.appendChild(tdEsp); tr.appendChild(tdCRM); tr.appendChild(tdOrig); tr.appendChild(tdAcoes);
+        tr.appendChild(tdNome); tr.appendChild(tdNasc); tr.appendChild(tdFaixa); tr.appendChild(tdResp); tr.appendChild(tdEnd); tr.appendChild(tdContato); tr.appendChild(tdConv); tr.appendChild(tdCart); tr.appendChild(tdTipo); tr.appendChild(tdPro); tr.appendChild(tdEsp); tr.appendChild(tdCRM); tr.appendChild(tdOrig); tr.appendChild(tdAcoes);
         tbody.appendChild(tr);
       }
       $('#contador').textContent=`${filtered.length} paciente${filtered.length===1?'':'s'}`;
@@ -678,10 +699,10 @@ document.getElementById('patient-form').addEventListener('submit', async (e)=>{
 
     function toCSV(rows){
       const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-      const header=['id','nome','nascimento(dd/mm/aa)','faixa','responsavel','endereco','contato','convenio','profissionais','especialidades','crm','origem'];
+      const header=['id','nome','nascimento(dd/mm/aa)','faixa','responsavel','endereco','contato','convenio','carteirinha','tipoAtendimento','profissionais','especialidades','crm','origem'];
       const lines=[header.join(',')];
       for(const r of rows){
-        const arr=[r.id,r.nome,formatShort(r.nascimento),r.faixa,r.responsavel,r.endereco,r.contato,r.convenio,(r.profissionais||[]).join(' | '),(r.especialidades||[]).join(' | '),r.crm,r.origem];
+        const arr=[r.id,r.nome,formatShort(r.nascimento),r.faixa,r.responsavel,r.endereco,r.contato,r.convenio,r.carteirinha,r.tipoAtendimento,(r.profissionais||[]).join(' | '),(r.especialidades||[]).join(' | '),r.crm,r.origem];
         lines.push(arr.map(esc).join(','));
       }
       return lines.join('\n');
