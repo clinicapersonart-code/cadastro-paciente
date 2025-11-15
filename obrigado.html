@@ -55,8 +55,7 @@
     }
     input[type="text"],
     input[type="tel"],
-    input[type="email"],
-    textarea{
+    input[type="email"]{
       width:100%;
       background:#020617;
       color:var(--text);
@@ -66,7 +65,6 @@
       font-size:14px;
       outline:none;
     }
-    textarea{min-height:70px; resize:vertical;}
     .lgpd-box{
       margin-top:10px;
       padding:8px;
@@ -139,6 +137,12 @@
       text-align:center;
       margin-top:6px;
     }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
   </style>
 </head>
 <body>
@@ -166,9 +170,15 @@
         <input id="email" type="email" placeholder="voce@exemplo.com" />
       </div>
 
-      <div style="margin-top:10px">
-        <label for="comentario">Comentário (opcional)</label>
-        <textarea id="comentario" placeholder="Se quiser, deixe um comentário sobre seu atendimento."></textarea>
+      <div class="row" style="margin-top:10px">
+        <div style="flex:1;">
+          <label for="carteirinha">Número da carteirinha (se houver)</label>
+          <input id="carteirinha" type="text" placeholder="Ex.: 123456789" />
+        </div>
+        <div style="flex:1;">
+          <label for="crm">CRM do médico que encaminhou (se souber)</label>
+          <input id="crm" type="text" placeholder="Ex.: CRM-SP 123456" />
+        </div>
       </div>
 
       <div class="lgpd-box">
@@ -205,11 +215,8 @@
   </main>
 
   <script>
-    // URL do seu Apps Script (já preenchida)
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec";
-
-    // TROCAR AQUI PELO LINK REAL DE AVALIAÇÃO DO GOOGLE
-    const GOOGLE_REVIEW_URL = //script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec//g.page/r/CeVIkm6xjD-zEBM/review;
+    const GOOGLE_REVIEW_URL = "https://g.page/r/CeVIkm6xjD-zEBM/review";
 
     const $ = (s,r=document)=>r.querySelector(s);
 
@@ -229,7 +236,8 @@
       const nome = $('#nome').value.trim();
       const contato = $('#contato').value.trim();
       const email = $('#email').value.trim();
-      const comentario = $('#comentario').value.trim();
+      const carteirinha = $('#carteirinha').value.trim();
+      const crm = $('#crm').value.trim();
       const lgpdOk = $('#lgpd').checked;
 
       if(!nome || !contato || !lgpdOk){
@@ -243,7 +251,8 @@
         nome,
         contato,
         email,
-        comentario,
+        carteirinha,
+        crm,
         ts: new Date().toISOString()
       };
 
@@ -265,11 +274,9 @@
         statusEl.textContent = 'Cadastro confirmado com sucesso. Obrigado por seguir com a Clínica Personart.';
         statusEl.classList.add('ok');
 
-        // Mostra área de review no Google
+        // Mostra área de review no Google após sucesso
         reviewArea.style.display = 'block';
 
-        // Não limpo o formulário inteiro para a pessoa ainda ver o que mandou,
-        // só desabilito o botão.
       }catch(err){
         statusEl.textContent = 'Não foi possível confirmar agora. Tente novamente mais tarde.';
         statusEl.classList.add('err');
