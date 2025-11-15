@@ -209,6 +209,17 @@
         </select>
       </div>
 
+      <div class="row" style="margin-top:10px">
+        <div style="flex:1;">
+          <label for="carteirinha">Número da carteirinha (se houver)</label>
+          <input id="carteirinha" type="text" placeholder="Ex.: 123456789" />
+        </div>
+        <div style="flex:1;">
+          <label for="crm">CRM do médico que encaminhou (se souber)</label>
+          <input id="crm" type="text" placeholder="Ex.: CRM-SP 123456" />
+        </div>
+      </div>
+
       <div style="margin-top:10px">
         <label for="queixa">Motivo da procura / queixa principal *</label>
         <textarea id="queixa" required placeholder="Conte brevemente o motivo pelo qual busca atendimento."></textarea>
@@ -236,9 +247,7 @@
   </main>
 
   <script>
-    // URL do seu Apps Script (já preenchida)
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec";
-
     const $ = (s,r=document)=>r.querySelector(s);
 
     const faixaCrianca = $('#faixa-crianca');
@@ -262,7 +271,6 @@
       status.textContent = '';
       status.className = 'status';
 
-      // validação básica extra
       const nome = $('#nome').value.trim();
       const nascimento = $('#nascimento').value;
       const contato = $('#contato').value.trim();
@@ -270,6 +278,8 @@
       const convenio = $('#convenio').value;
       const lgpdOk = $('#lgpd').checked;
       const faixa = faixaCrianca.checked ? 'Criança' : (faixaAdulto.checked ? 'Adulto' : '');
+      const carteirinha = $('#carteirinha').value.trim();
+      const crm = $('#crm').value.trim();
 
       if(!nome || !nascimento || !contato || !queixa || !convenio || !faixa || !lgpdOk){
         status.textContent = 'Preencha todos os campos obrigatórios.';
@@ -286,6 +296,8 @@
         contato,
         email: $('#email').value.trim(),
         convenio,
+        carteirinha,
+        crm,
         queixa,
         ts: new Date().toISOString()
       };
@@ -308,7 +320,6 @@
         status.textContent = 'Cadastro enviado com sucesso. Obrigado, em breve a equipe da Clínica Personart entrará em contato.';
         status.classList.add('ok');
 
-        // limpa, mas mantém a sensação de "concluído"
         e.target.reset();
         atualizarResponsavel();
       }catch(err){
