@@ -3,341 +3,279 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pré-cadastro de Paciente – Clínica Personart</title>
+  <title>Confirmação de Cadastro – Clínica Personart</title>
   <style>
     :root{
-      --bg:#0b1220; --card:#111827; --muted:#e5e1; --text:#f8fafc;
-      --brand:#F2C8A0; --brand-dark:#E3B189; --border:#374151; --danger:#ef4444;
+      --bg:#0b1220;
+      --card:#111827;
+      --muted:#e5e7eb;
+      --text:#f8fafc;
+      --brand:#F2C8A0;
+      --brand-dark:#E3B189;
+      --border:#374151;
+      --danger:#ef4444;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial,"Noto Sans";
-      background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%);
+      background:linear-gradient(180deg,#020617 0%,#020617 40%,#0f172a 100%);
       color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
     }
-    .container{max-width:800px;margin:0 auto;padding:20px 16px 32px}
     .card{
-      background:#111827;
+      background:radial-gradient(900px 200px at 10% -10%,rgba(242,200,160,.16),transparent),
+                 linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));
       border:1px solid var(--border);
-      border-radius:16px;
-      padding:18px;
-      box-shadow:0 10px 40px rgba(0,0,0,.35);
-    }
-    h1{font-size:22px;margin:0 0 6px;color:#F2C8A0}
-    p{margin:4px 0 8px;font-size:14px;color:#e5e7eb}
-    label{display:block;font-size:13px;color:#cbd5e1;margin-bottom:6px}
-    input[type="text"],input[type="date"],select,textarea{
+      border-radius:18px;
+      padding:18px 18px 20px;
+      max-width:520px;
       width:100%;
-      background:#0b1220;
+      box-shadow:0 16px 50px rgba(0,0,0,.55);
+    }
+    h1{
+      margin:0 0 4px;
+      font-size:22px;
+      color:var(--brand);
+    }
+    .subtitle{
+      margin:0 0 14px;
+      font-size:13px;
+      color:#cbd5e1;
+    }
+    label{
+      display:block;
+      font-size:13px;
+      color:#e5e7eb;
+      margin-bottom:4px;
+    }
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    textarea{
+      width:100%;
+      background:#020617;
       color:var(--text);
       border:1px solid var(--border);
       border-radius:10px;
-      padding:10px 12px;
-      outline:none;
+      padding:9px 10px;
       font-size:14px;
+      outline:none;
     }
-    .grid{display:grid;gap:14px}
-    .cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-    @media (max-width:720px){.cols-2{grid-template-columns:1fr}}
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .radio{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
+    textarea{min-height:70px; resize:vertical;}
+    .lgpd-box{
+      margin-top:10px;
+      padding:8px;
+      border-radius:10px;
       border:1px solid var(--border);
-      background:#0b1220;
-      font-size:13px;
-      cursor:pointer;
+      background:#020617;
+      font-size:12px;
+      color:#d1d5db;
     }
-    .hint{font-size:12px;color:#9ca3af}
+    .lgpd-box strong{color:var(--brand);}
+    .lgpd-check{
+      display:flex;
+      align-items:flex-start;
+      gap:6px;
+      margin-top:6px;
+      font-size:12px;
+    }
+    .lgpd-check input{margin-top:2px;}
     .btn{
       appearance:none;
-      border-radius:12px;
-      padding:10px 14px;
-      border:none;
-      cursor:pointer;
-      font-weight:600;
+      border:0;
+      border-radius:999px;
+      padding:10px 16px;
       font-size:14px;
+      font-weight:600;
+      cursor:pointer;
     }
-    .btn-primary{background:var(--brand);color:#111}
-    .btn-primary:hover{background:var(--brand-dark)}
-    .btn-outline{
+    .btn-primary{
+      background:var(--brand);
+      color:#111827;
+      width:100%;
+      margin-top:14px;
+    }
+    .btn-primary:disabled{
+      opacity:.6;
+      cursor:wait;
+    }
+    .btn-review{
+      margin-top:10px;
       background:transparent;
-      color:#f8fafc;
-      border:1px solid var(--border);
+      border-radius:999px;
+      border:1px solid var(--brand);
+      color:var(--brand);
+      text-decoration:none;
+      padding:9px 14px;
+      font-size:14px;
+      font-weight:600;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
     }
-    .muted{font-size:12px;color:#9ca3af}
-    .error{color:var(--danger);font-size:13px;margin-top:6px}
+    .btn-review span.stars{
+      font-size:16px;
+    }
+    .status{
+      margin-top:10px;
+      font-size:13px;
+      text-align:center;
+    }
+    .status.ok{color:#bbf7d0;}
+    .status.err{color:#fecaca;}
+    .small{
+      font-size:11px;
+      color:#9ca3af;
+      margin-top:10px;
+      text-align:center;
+    }
+    .center{
+      text-align:center;
+      margin-top:6px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>Pré-cadastro de paciente</h1>
-      <p>
-        Este formulário é para agilizar seu atendimento na <strong>Clínica Personart</strong>.
-        Os dados vão direto para nossa equipe e serão tratados conforme a LGPD.
+  <main class="card">
+    <header>
+      <h1>Confirmação de cadastro</h1>
+      <p class="subtitle">
+        Se você já é paciente da Clínica Personart, confirme seus dados abaixo.
       </p>
+    </header>
 
-      <form id="paciente-form">
-        <div class="grid cols-2">
-          <div>
-            <label for="nome">Nome completo do paciente *</label>
-            <input id="nome" type="text" required />
-          </div>
-          <div>
-            <label for="nascimento">Data de nascimento *</label>
-            <input id="nascimento" type="date" required />
-            <div class="hint" id="idade-hint"></div>
-          </div>
-        </div>
+    <form id="form-confirmacao">
+      <div>
+        <label for="nome">Nome completo *</label>
+        <input id="nome" type="text" required placeholder="Ex.: Ana Silva" />
+      </div>
 
-        <div class="row" style="margin-top:8px">
-          <span class="muted">Faixa etária *</span>
-          <label class="radio">
-            <input type="radio" name="faixa" value="Criança" id="faixa-crianca" /> Criança
-          </label>
-          <label class="radio">
-            <input type="radio" name="faixa" value="Adulto" id="faixa-adulto" /> Adulto
-          </label>
-        </div>
+      <div style="margin-top:10px">
+        <label for="contato">Telefone / WhatsApp *</label>
+        <input id="contato" type="tel" required placeholder="(15) 9 9999-9999" />
+      </div>
 
-        <div id="responsavel-wrap" style="margin-top:10px;display:none;">
-          <label for="responsavel">Nome do responsável (para pacientes criança) *</label>
-          <input id="responsavel" type="text" />
-        </div>
+      <div style="margin-top:10px">
+        <label for="email">E-mail (opcional)</label>
+        <input id="email" type="email" placeholder="voce@exemplo.com" />
+      </div>
 
-        <div class="grid cols-2" style="margin-top:10px">
-          <div>
-            <label for="endereco">Endereço completo *</label>
-            <input id="endereco" type="text" required />
-          </div>
-          <div>
-            <label for="contato">Telefone/WhatsApp *</label>
-            <input id="contato" type="text" required placeholder="(DDD) 9XXXX-XXXX" />
-          </div>
-        </div>
+      <div style="margin-top:10px">
+        <label for="comentario">Comentário (opcional)</label>
+        <textarea id="comentario" placeholder="Se quiser, deixe um comentário sobre seu atendimento."></textarea>
+      </div>
 
-        <div class="grid cols-2" style="margin-top:10px">
-          <div>
-            <label for="convenio">Convênio *</label>
-            <select id="convenio" required>
-              <option value="">Selecione</option>
-              <option value="Particular">Particular</option>
-              <option value="Funserv">Funserv</option>
-              <option value="Danamed">Danamed</option>
-              <option value="Gama Saúde">Gama Saúde</option>
-              <option value="Fusex">Fusex</option>
-              <option value="BlueSaúde">BlueSaúde</option>
-              <option value="Unimed Campinas">Unimed Campinas</option>
-              <option value="Ossel">Ossel</option>
-              <option value="Ofebas">Ofebas</option>
-            </select>
-            <div class="hint">Se não tiver convênio, escolha “Particular”.</div>
-          </div>
+      <div class="lgpd-box">
+        <strong>LGPD – Confirmação</strong>
+        <p style="margin:4px 0 0;">
+          Ao confirmar, você autoriza a Clínica Personart a manter e atualizar seus dados
+          para fins de contato, agendamento e organização interna do atendimento,
+          conforme a Lei Geral de Proteção de Dados (LGPD).
+        </p>
+        <label class="lgpd-check">
+          <input type="checkbox" id="lgpd" required />
+          <span>Confirmo que sou paciente da Clínica Personart e concordo com o uso dos meus dados conforme acima.</span>
+        </label>
+      </div>
 
-          <div>
-            <label for="carteirinha">Número da carteirinha</label>
-            <input id="carteirinha" type="text" placeholder="Se houver" />
-          </div>
-        </div>
+      <button class="btn btn-primary" type="submit" id="btn-enviar">Confirmar cadastro</button>
+    </form>
 
-        <div style="margin-top:10px">
-          <label>Tipo de atendimento desejado</label>
-          <div class="row">
-            <label class="radio">
-              <input type="radio" name="tipo-atendimento" value="Convencional" id="tipo-convencional" />
-              Convencional
-            </label>
-            <label class="radio">
-              <input type="radio" name="tipo-atendimento" value="ABA" id="tipo-aba" />
-              ABA
-            </label>
-          </div>
-          <div class="hint">Se não tiver certeza, pode deixar em branco.</div>
-        </div>
+    <div id="status" class="status"></div>
 
-        <div class="grid cols-2" style="margin-top:10px">
-          <div>
-            <label for="crm">CRM do médico que encaminhou (se houver)</label>
-            <input id="crm" type="text" placeholder="Ex.: CRM-SP 123456" />
-          </div>
-          <div>
-            <label for="origem">Como conheceu a clínica?</label>
-            <input id="origem" type="text" list="lista-origens" placeholder="Ex.: Indicação, Instagram..." />
-            <datalist id="lista-origens">
-              <option value="Indicação"></option>
-              <option value="Instagram"></option>
-              <option value="Google"></option>
-              <option value="Site"></option>
-            </datalist>
-          </div>
-        </div>
-
-        <div style="margin-top:12px">
-          <label for="queixa">Motivo principal da procura (breve descrição)</label>
-          <textarea id="queixa" rows="4" placeholder="Ex.: dificuldades na escola, ansiedade, conflitos familiares..."></textarea>
-        </div>
-
-        <div style="margin-top:16px">
-          <label>
-            <input type="checkbox" id="lgpd" required />
-            Li e concordo com o tratamento dos meus dados pessoais pela Clínica Personart, nos termos da LGPD,
-            exclusivamente para fins de agendamento, prontuário e contato.
-          </label>
-          <div class="hint">
-            Seus dados são armazenados de forma segura e não são compartilhados com terceiros sem autorização.
-          </div>
-        </div>
-
-        <div id="msg-erro" class="error" style="display:none;"></div>
-        <div id="msg-ok" class="muted" style="display:none;margin-top:6px;"></div>
-
-        <div class="row" style="margin-top:16px">
-          <button class="btn btn-primary" type="submit">Enviar pré-cadastro</button>
-          <button class="btn btn-outline" type="button" id="btn-limpar">Limpar campos</button>
-        </div>
-      </form>
+    <div id="review-area" class="center" style="display:none;">
+      <p style="font-size:13px; color:#e5e7eb; margin:8px 0 6px;">
+        Seu retorno ajuda muito outros pacientes a encontrarem atendimento psicológico de qualidade.
+        Se puder, avalie a Clínica Personart no Google com
+        <strong>5 estrelas</strong>.
+      </p>
+      <a id="btn-review" class="btn-review" href="#" target="_blank" rel="noopener noreferrer">
+        <span class="stars">★★★★★</span>
+        <span>Avaliar no Google</span>
+      </a>
     </div>
-  </div>
+
+    <div class="small">Desenvolvido para Clínica Personart.</div>
+  </main>
 
   <script>
-    const $ = s => document.querySelector(s);
+    // URL do seu Apps Script (já preenchida)
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec";
 
-    function parseISODate(iso){
-      if(!iso || !/^\\d{4}-\\d{2}-\\d{2}$/.test(iso)) return null;
-      const [y,m,d] = iso.split('-').map(Number);
-      return new Date(y,m-1,d);
-    }
+    // TROCAR AQUI PELO LINK REAL DE AVALIAÇÃO DO GOOGLE
+    const GOOGLE_REVIEW_URL = //script.google.com/macros/s/AKfycbxzJMIZBnlQaj1YSrP7Al585qoFrjm7jthbYvVo8eZkyGOrS6iPr6WVie4mqnCsJ-K_7A/exec//g.page/r/CeVIkm6xjD-zEBM/review;
 
-    // Atualiza idade e faixa sugerida
-    $('#nascimento').addEventListener('change', () => {
-      const iso = $('#nascimento').value;
-      const d = parseISODate(iso);
-      if(!d){ $('#idade-hint').textContent=''; return; }
-      const t = new Date();
-      let a = t.getFullYear()-d.getFullYear();
-      const m = t.getMonth()-d.getMonth();
-      if(m<0 || (m===0 && t.getDate()<d.getDate())) a--;
-      $('#idade-hint').textContent = a>=0 ? `${a} anos` : '';
-      if(a < 18){
-        $('#faixa-crianca').checked = true;
-        $('#responsavel-wrap').style.display = '';
-      }else{
-        $('#faixa-adulto').checked = true;
-        $('#responsavel-wrap').style.display = 'none';
-      }
-    });
+    const $ = (s,r=document)=>r.querySelector(s);
 
-    // Mostrar/esconder responsável manualmente
-    $('#faixa-crianca').addEventListener('change',()=>{
-      if($('#faixa-crianca').checked){
-        $('#responsavel-wrap').style.display='';
-      }
-    });
-    $('#faixa-adulto').addEventListener('change',()=>{
-      if($('#faixa-adulto').checked){
-        $('#responsavel-wrap').style.display='none';
-      }
-    });
+    const form = $('#form-confirmacao');
+    const statusEl = $('#status');
+    const btn = $('#btn-enviar');
+    const reviewArea = $('#review-area');
+    const btnReview = $('#btn-review');
 
-    // Limpar
-    $('#btn-limpar').addEventListener('click',()=>{
-      document.getElementById('paciente-form').reset();
-      $('#idade-hint').textContent='';
-      $('#responsavel-wrap').style.display='none';
-      $('#msg-erro').style.display='none';
-      $('#msg-ok').style.display='none';
-    });
+    btnReview.href = GOOGLE_REVIEW_URL;
 
-    // Aqui você coloca a URL do Apps Script que vai receber o pré-cadastro (POST JSON)
-    const SCRIPT_URL = 'COLE_AQUI_SEU_ENDPOINT_DO_APPS_SCRIPT';
-
-    function getFormData(){
-      const nome = $('#nome').value.trim();
-      const nascimento = $('#nascimento').value || '';
-      const faixa = $('#faixa-crianca').checked ? 'Criança' :
-                    ($('#faixa-adulto').checked ? 'Adulto' : '');
-      const responsavel = $('#responsavel').value.trim();
-      const endereco = $('#endereco').value.trim();
-      const contato = $('#contato').value.trim();
-      const convenio = $('#convenio').value || '';
-      const carteirinha = $('#carteirinha').value.trim();
-      const tipoAtendimento = $('#tipo-convencional').checked ? 'Convencional' :
-                              ($('#tipo-aba').checked ? 'ABA' : '');
-      const crm = $('#crm').value.trim();
-      const origem = $('#origem').value.trim();
-      const queixa = $('#queixa').value.trim();
-
-      return {
-        nome, nascimento, faixa, responsavel, endereco, contato,
-        convenio, carteirinha, tipoAtendimento, crm, origem, queixa
-      };
-    }
-
-    function validate(d){
-      if(!d.nome) return 'Informe o nome do paciente.';
-      if(!d.nascimento) return 'Informe a data de nascimento.';
-      if(!d.faixa) return 'Selecione se é Criança ou Adulto.';
-      if(d.faixa === 'Criança' && !d.responsavel)
-        return 'Informe o nome do responsável (paciente criança).';
-      if(!d.endereco) return 'Informe o endereço.';
-      if(!d.contato) return 'Informe um telefone/WhatsApp para contato.';
-      if(!d.convenio) return 'Selecione o convênio ou “Particular”.';
-      if(!document.getElementById('lgpd').checked)
-        return 'Você precisa aceitar o termo de LGPD para enviar.';
-      return null;
-    }
-
-    document.getElementById('paciente-form').addEventListener('submit', async (e)=>{
+    form.addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const dados = getFormData();
-      const erro = validate(dados);
-      const boxErro = $('#msg-erro');
-      const boxOk = $('#msg-ok');
-      boxErro.style.display='none';
-      boxOk.style.display='none';
+      statusEl.textContent = '';
+      statusEl.className = 'status';
 
-      if(erro){
-        boxErro.textContent = erro;
-        boxErro.style.display='block';
+      const nome = $('#nome').value.trim();
+      const contato = $('#contato').value.trim();
+      const email = $('#email').value.trim();
+      const comentario = $('#comentario').value.trim();
+      const lgpdOk = $('#lgpd').checked;
+
+      if(!nome || !contato || !lgpdOk){
+        statusEl.textContent = 'Preencha nome, contato e marque a confirmação de LGPD.';
+        statusEl.classList.add('err');
         return;
       }
 
       const payload = {
-        tipo: 'pre_cadastro_paciente',
-        dados
+        origem: 'confirmacao_paciente_existente',
+        nome,
+        contato,
+        email,
+        comentario,
+        ts: new Date().toISOString()
       };
 
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
       try{
-        const btn = e.submitter || document.querySelector('button[type="submit"]');
-        if(btn){ btn.disabled=true; btn.textContent='Enviando...'; }
-        const resp = await fetch(SCRIPT_URL, {
+        const res = await fetch(SCRIPT_URL, {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            kind: 'confirmacao_paciente_existente',
+            data: payload
+          })
         });
-        if(!resp.ok) throw new Error('Erro ao enviar. Código '+resp.status);
-        boxOk.innerHTML = 'Pré-cadastro enviado com sucesso. Nossa equipe entrará em contato em breve.'
-   boxOk.innerHTML = 'Pré-cadastro enviado com sucesso. Nossa equipe entrará em contato em breve.'
-  + '<br><br><strong>Se você já é paciente da Clínica Personart</strong>, sua avaliação nos ajuda muito.'
-  + ' Clique no link abaixo para avaliar:'
-  + ' <a href="https://g.page/r/CeVIkm6xjD-zEAE/review" target="_blank" rel="noopener noreferrer">'
-  + 'Avaliar a Clínica Personart no Google</a>.';
-boxOk.style.display = 'block';
-boxOk.style.display = 'block';
-        document.getElementById('paciente-form').reset();
-        $('#idade-hint').textContent='';
-        $('#responsavel-wrap').style.display='none';
+
+        if(!res.ok) throw new Error('Erro HTTP: '+res.status);
+
+        statusEl.textContent = 'Cadastro confirmado com sucesso. Obrigado por seguir com a Clínica Personart.';
+        statusEl.classList.add('ok');
+
+        // Mostra área de review no Google
+        reviewArea.style.display = 'block';
+
+        // Não limpo o formulário inteiro para a pessoa ainda ver o que mandou,
+        // só desabilito o botão.
       }catch(err){
-        boxErro.textContent = 'Não foi possível enviar agora: ' + err.message;
-        boxErro.style.display='block';
-      }finally{
-        const btn = e.submitter || document.querySelector('button[type="submit"]');
-        if(btn){ btn.disabled=false; btn.textContent='Enviar pré-cadastro'; }
+        statusEl.textContent = 'Não foi possível confirmar agora. Tente novamente mais tarde.';
+        statusEl.classList.add('err');
+        btn.disabled = false;
+        btn.textContent = 'Confirmar cadastro';
+        return;
       }
     });
   </script>
